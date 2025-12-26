@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import showToast from '../../utils/toast';
+import packageJson from '../../../package';
 
 const emit = defineEmits(['loadData']);
 
@@ -47,6 +48,8 @@ const clearHistory = () => {
 };
 
 const showConfirmPopover = ref(false);
+
+const version = ref(packageJson.version);
 
 onMounted(() => {
   downloadPath.value =
@@ -113,7 +116,7 @@ onMounted(() => {
       <!-- 关于 -->
       <div v-if="currentMenu === 'about'" class="about">
         <h3>轻溪去水印</h3>
-        <p>版本: 1.0.0</p>
+        <p>版本: {{ version }}</p>
         <p>本工具仅用于学习交流，请勿用于商业用途。</p>
         <p>注意：频繁解析可能导致平台限制，建议合理使用哦。</p>
         <div class="popover-container">

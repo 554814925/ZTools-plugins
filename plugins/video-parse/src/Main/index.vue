@@ -107,22 +107,34 @@ const parseInfo = async () => {
     detailInfo.value = info;
     currentTab.value = info.downloadUrl ? 'video' : 'pic';
     loading.value = false;
-    if (info.pics) {
-      imageLoading.value = {};
-      imageTab.value = info.pics[0]?.livePhotoUrl ? 'live' : 'pic';
-      info.pics.forEach((_, index) => {
-        imageLoading.value[index] = true;
-      });
-    }
-    if (info.cover) {
-      coverLoading.value = true;
-    }
+    setImageLoading(info);
     setHistory(content.value, info);
   } catch (e) {
     console.log(e.message);
     loading.value = false;
     showError(e.message);
   }
+}
+
+const setImageLoading = (data) => {
+  const pics = data.pics;
+  if (pics) {
+    imageLoading.value = {};
+    imageTab.value = data.pics[0]?.livePhotoUrl ? 'live' : 'pic';
+    pics.forEach((_, index) => {
+      imageLoading.value[index] = true;
+    });
+  }
+  if (data.cover) {
+    coverLoading.value = true;
+  }
+}
+
+const pasteClipboard = () => {
+  // js读取剪贴板
+  navigator.clipboard.readText().then(text => {
+    content.value = text;
+  });
 }
 
 const MAX_HISTORY = 50;
@@ -226,6 +238,7 @@ const handlerLoadData = (e) => {
   currentTab.value = data.downloadUrl ? 'video' : 'pic';
   content.value = ctx;
   showDialog.value = false;
+  setImageLoading(data);
 }
 </script>
 <template>
@@ -237,7 +250,8 @@ const handlerLoadData = (e) => {
         </div>
         <!-- 声明 -->
         <div class="main-card-desc">本工具仅用于学习交流，请勿用于商业用途。</div>
-        <textarea v-model="content" name="ipt" id="input" placeholder="在此粘贴视频分享链接..." @keydown.enter.prevent="parseInfo"></textarea>
+        <textarea v-model="content" name="ipt" id="input" placeholder="右键粘贴视频分享链接..." @keydown.enter.prevent="parseInfo" @contextmenu="pasteClipboard"></textarea>
+        <button v-show="content !== ''" class="clear-btn" @click="content = ''" title="清空输入框">×</button>
         <button class="parse-btn" :disabled="loading" @click="parseInfo">
           <svg v-if="!loading" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search w-4 h-4" aria-hidden="true"><path d="m21 21-4.34-4.34"></path><circle cx="11" cy="11" r="8"></circle></svg>
           <svg v-else t="1765683055654" class="icon loading" viewBox="0 0 1024 1024" fill="currentColor" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="12849" width="15" height="15"><path d="M469.333333 128a42.666667 42.666667 0 0 1 42.666667-42.666667c235.648 0 426.666667 191.018667 426.666667 426.666667a42.666667 42.666667 0 1 1-85.333334 0 341.333333 341.333333 0 0 0-341.333333-341.333333 42.666667 42.666667 0 0 1-42.666667-42.666667z" p-id="12850"></path></svg>
@@ -374,6 +388,27 @@ const handlerLoadData = (e) => {
         font-size: 12px;
         color: #909399;
         margin-bottom: 12px;
+      }
+
+      .clear-btn {
+        width: 15px;
+        height: 15px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        position: absolute;
+        right: 22px;
+        top: 188px;
+        border-radius: 50%;
+        border: none;
+        font-size: 14px;
+        background-color: transparent;
+        transition: background-color 0.3s;
+      }
+
+      .clear-btn:hover {
+        background-color: #E3E8EF;
       }
 
       .platform {

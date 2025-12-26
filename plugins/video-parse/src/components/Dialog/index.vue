@@ -36,31 +36,24 @@ const handleConfirm = () => {
 <template>
   <Transition name="fade">
     <div 
-      v-if="visible" 
+      v-show="visible" 
       class="dialog-overlay"
       @click.self="handleClose"
     >
       <div class="dialog-content" :style="{ maxWidth: width }">
         
-        <!-- Header -->
         <div class="dialog-header">
           <h3 class="header-title">
-            <!-- 具名插槽：如果不传 icon，只显示标题 -->
             <slot name="icon"></slot>
             {{ title }}
           </h3>
-          <button 
-            @click="handleClose" 
-            class="btn-close"
-          >×</button>
+          <button @click="handleClose" class="btn-close">×</button>
         </div>
 
-        <!-- Body: 默认插槽 -->
         <div class="dialog-body">
           <slot></slot>
         </div>
 
-        <!-- Footer: 具名插槽，提供默认按钮 -->
         <div class="dialog-footer">
           <slot name="footer">
             <button 
@@ -81,18 +74,32 @@ const handleConfirm = () => {
 /* 动画 */
 .fade-enter-active,
 .fade-leave-active {
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition: opacity 0.3s ease;
 }
 
+/* 2. 为内容单独添加 transform 过渡 */
+.fade-enter-active .dialog-content,
+.fade-leave-active .dialog-content {
+  transition: transform 0.3s ease;
+}
+
+/* 3. 初始/结束状态：背景透明，内容缩放 */
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+.fade-enter-from .dialog-content,
+.fade-leave-to .dialog-content {
   transform: scale(0.9);
 }
 
+/* 4. 正常状态 */
 .fade-enter-to,
 .fade-leave-from {
   opacity: 1;
+}
+.fade-enter-to .dialog-content,
+.fade-leave-from .dialog-content {
   transform: scale(1);
 }
 

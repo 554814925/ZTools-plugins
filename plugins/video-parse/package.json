@@ -1,6 +1,7 @@
 {
   "name": "video-parse-utools",
   "type": "module",
+  "version": "1.0.1",
   "author": {
     "name": "青明尘下",
     "email": "qmcx.ming@qq.com"
