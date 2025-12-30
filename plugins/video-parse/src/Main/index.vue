@@ -230,6 +230,28 @@ const download = async (livePhoto) => {
   }
 }
 
+const loadingAll = ref(false);
+
+const downloadAll = async () => {
+  let type = imageTab.value;
+  let list = [];
+  if (imageTab.value === 'live') {
+    list = detailInfo.value.pics.map(item => item.livePhotoUrl);
+  } else {
+    list = detailInfo.value.pics.map(item => item.url);
+  }
+  loadingAll.value = true;
+  for (let i = 0; i < list.length; i++) {
+    console.log(list[i]);
+    await window.services.downloadVideo(list[i], type === 'live' ? 'video' : 'pic', (downloaded, total) => {
+      const progress = (downloaded / total) * 100;
+      showToast(`${i + 1}${type === 'live' ? 'Live图片' : '图片'}下载进度: ${progress.toFixed(0)}%`);
+    }, i + 1);
+  }
+  showToast('下载成功');
+  loadingAll.value = false;
+}
+
 const copyAuthorUrl = () => {
   const platform = detailInfo.value.platform;
   if (platform !== 'default') {
@@ -333,9 +355,20 @@ const isNotEmpty = (arr, key) => {
                 <div class="copy-btn" @click="copyLink(item.livePhotoUrl)">复制</div>
               </div>
             </div>
-            <div class="live-photo">
-              <div v-show="imageTab === 'live' && isNotEmpty(detailInfo.pics, 'url')" class="live-photo-item" @click="switchImageTab('pic')">Live</div>
-              <div v-show="imageTab === 'pic' && isNotEmpty(detailInfo.pics, 'livePhotoUrl')" class="live-photo-item" @click="switchImageTab('live')">Photo</div>
+            <div class="left-top">
+              <div class="live-photo">
+                <div v-show="imageTab === 'live' && isNotEmpty(detailInfo.pics, 'url')" class="live-photo-item" @click="switchImageTab('pic')">Live</div>
+                <div v-show="imageTab === 'pic' && isNotEmpty(detailInfo.pics, 'livePhotoUrl')" class="live-photo-item" @click="switchImageTab('live')">Photo</div>
+              </div>
+              <button v-if="isNotEmpty(detailInfo.pics, 'url') || isNotEmpty(detailInfo.pics, 'livePhotoUrl')" :disabled="loadingAll" class="left-top-item" @click="downloadAll()">
+                <svg v-if="!loadingAll" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7,10 12,15 17,10"/>
+                  <line x1="12" x2="12" y1="15" y2="3"/>
+                </svg>
+                <svg v-else t="1765683055654" class="icon loading" viewBox="0 0 1024 1024" fill="currentColor" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="12849" width="15" height="15"><path d="M469.333333 128a42.666667 42.666667 0 0 1 42.666667-42.666667c235.648 0 426.666667 191.018667 426.666667 426.666667a42.666667 42.666667 0 1 1-85.333334 0 341.333333 341.333333 0 0 0-341.333333-341.333333 42.666667 42.666667 0 0 1-42.666667-42.666667z" p-id="12850"></path></svg>
+                {{ loadingAll ? '下载中...' : '全部保存' }}
+              </button>
             </div>
           </div>
           <!-- 封面 -->
@@ -495,19 +528,50 @@ const isNotEmpty = (arr, key) => {
         gap: 10px;
       }
 
-      .live-photo {
+      .left-top {
         position: absolute;
         top: 5px;
         left: 5px;
         display: flex;
-        font-size: 12px;
+        align-items: center;
+        gap: 5px;
 
-        .live-photo-item {
-          padding: 2px 5px;
+        .live-photo {
+          display: flex;
+          font-size: 12px;
+
+          .live-photo-item {
+            padding: 4px 8px;
+            background-color: rgba(0, 0, 0, 1);
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+          }
+        }
+
+        .left-top-item {
           background-color: rgba(0, 0, 0, 1);
           color: #fff;
           border-radius: 4px;
+          font-size: 12px;
+          padding: 4px 8px;
           cursor: pointer;
+          transition: all .3s;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          transition: opacity 0.3s;
+          border: none;
+        }
+
+        .left-top-item:hover {
+          opacity: 0.9;
+        }
+
+        .left-top-item:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+          color: rgba(255, 255, 255, 0.7);
         }
       }
     }

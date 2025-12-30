@@ -23,7 +23,7 @@ window.services = {
     return filePath
   },
   // 下载视频到本地下载目录
-  async downloadVideo (url, type = 'pic', onProgress) {
+  async downloadVideo (url, type = 'pic', onProgress, filenameSuffix) {
     const https = require('https');
     const fs = require('fs');
     return new Promise((resolve, reject) => {
@@ -40,7 +40,9 @@ window.services = {
         const seconds = String(date.getSeconds()).padStart(2, '0');
         const prefix = type === 'video' ? '视频' : '图片';
         const suffix = type === 'video' ? '.mp4' : '.jpg';
-        filename = `${prefix}${year}${month}${day}-${hours}${minutes}${seconds}` + suffix;
+        // 兼容多个同时下载，增加自定义后缀
+        const moreSuffix = filenameSuffix ? `-${filenameSuffix}` : '';
+        filename = `${prefix}${year}${month}${day}-${hours}${minutes}${seconds}${moreSuffix}` + suffix;
       }
       const downloadPath = window.utools.dbStorage.getItem('downloadPath') || window.utools.getPath('downloads');
       const filePath = path.join(downloadPath, filename);
