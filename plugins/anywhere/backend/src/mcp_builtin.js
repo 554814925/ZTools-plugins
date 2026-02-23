@@ -4,6 +4,8 @@ const os = require('os');
 const { exec, spawn } = require('child_process');
 const { handleFilePath, parseFileObject } = require('./file.js');
 
+const { createChatCompletion } = require('./chat.js'); 
+
 const isWin = process.platform === 'win32';
 const currentOS = process.platform === 'win32' ? 'Windows' : (process.platform === 'darwin' ? 'macOS' : 'Linux');
 
@@ -250,24 +252,24 @@ const BUILTIN_TOOLS = {
     "builtin_filesystem": [
         {
             name: "glob_files",
-            description: "Fast file pattern matching to locate file paths. Use this to find files before reading them.",
+            description: "Fast file pattern matching to locate file paths. You MUST specify a 'path' to limit the search scope.",
             inputSchema: {
                 type: "object",
                 properties: {
                     pattern: { type: "string", description: "Glob pattern (e.g., 'src/**/*.ts' for recursive, '*.json' for current dir)." },
-                    path: { type: "string", description: "Root directory to search. Defaults to current user home." }
+                    path: { type: "string", description: "The directory to search in. You MUST provide a specific path (e.g., project root or subfolder). Do NOT use root '/' or '~' unless absolutely necessary." }
                 },
-                required: ["pattern"]
+                required: ["pattern", "path"]
             }
         },
         {
             name: "grep_search",
-            description: "Search for patterns in file contents using Regex.",
+            description: "Search for patterns in file contents using Regex. You MUST specify a 'path' to limit the search scope.",
             inputSchema: {
                 type: "object",
                 properties: {
                     pattern: { type: "string", description: "Regex pattern to search for." },
-                    path: { type: "string", description: "Root directory to search." },
+                    path: { type: "string", description: "The directory to search in. You MUST provide a specific path." },
                     glob: { type: "string", description: "Glob pattern to filter files (e.g., '**/*.js')." },
                     output_mode: {
                         type: "string",
@@ -276,7 +278,7 @@ const BUILTIN_TOOLS = {
                     },
                     multiline: { type: "boolean", description: "Enable multiline matching." }
                 },
-                required: ["pattern"]
+                required: ["pattern", "path"]
             }
         },
         {
@@ -647,36 +649,30 @@ const isPathSafe = (targetPath) => {
 
 async function runSubAgent(args, globalContext, signal) {
     const { task, context: userContext, tools: allowedToolNames, planning_level, custom_steps } = args;
-    const { apiKey, baseUrl, model, tools: allToolDefinitions, mcpSystemPrompt, onUpdate } = globalContext;
+    const { apiKey, baseUrl, model, tools: allToolDefinitions, mcpSystemPrompt, onUpdate, apiType } = globalContext;
 
     // --- 1. 工具权限控制 (最小权限原则) ---
-    // 默认没有任何工具权限
     let availableTools = [];
-
-    // 只有当 allowedToolNames 被明确提供且为非空数组时，才进行筛选并授予权限
     if (allowedToolNames && Array.isArray(allowedToolNames) && allowedToolNames.length > 0) {
         const allowedSet = new Set(allowedToolNames);
         availableTools = (allToolDefinitions || []).filter(t =>
-            allowedSet.has(t.function.name) && t.function.name !== 'sub_agent' // 排除自身，防止递归
+            allowedSet.has(t.function.name) && t.function.name !== 'sub_agent'
         );
     }
 
     // --- 2. 步骤控制 ---
-    let MAX_STEPS = 20; // Default medium
+    let MAX_STEPS = 20; 
     if (planning_level === 'fast') MAX_STEPS = 10;
     else if (planning_level === 'high') MAX_STEPS = 30;
     else if (planning_level === 'custom' && custom_steps) MAX_STEPS = Math.min(100, Math.max(10, custom_steps));
 
     // --- 3. 提示词构建 ---
-
-    // System Prompt: 身份、规则、环境
     const systemInstruction = `You are a specialized Sub-Agent Worker.
 Your Role: Autonomous task executor.
 Strategy: Plan, execute tools, observe results, and iterate until the task is done.
 Output: When finished, output the final answer directly as text. Do NOT ask the user for clarification unless all tools fail.
 ${mcpSystemPrompt ? '\n' + mcpSystemPrompt : ''}`;
 
-    // User Prompt: 具体任务、上下文、限制
     const userInstruction = `## Current Assignment
 **Task**: ${task}
 
@@ -693,12 +689,9 @@ ${userContext || 'No additional context provided.'}
     ];
 
     let step = 0;
-
-    // 用于记录完整过程的日志
     const executionLog = [];
     const log = (msg) => {
         executionLog.push(msg);
-        // 实时回调给前端
         if (onUpdate && typeof onUpdate === 'function') {
             onUpdate(executionLog.join('\n'));
         }
@@ -706,7 +699,6 @@ ${userContext || 'No additional context provided.'}
 
     log(`[Sub-Agent] Started. Max steps: ${MAX_STEPS}. Tools: ${availableTools.map(t => t.function.name).join(', ') || 'None'}`);
 
-    // 动态导入
     const { invokeMcpTool } = require('./mcp.js');
 
     while (step < MAX_STEPS) {
@@ -716,46 +708,77 @@ ${userContext || 'No additional context provided.'}
         log(`\n--- Step ${step}/${MAX_STEPS} ---`);
 
         try {
-            // 3.1 LLM 思考
-            const response = await fetch(`${baseUrl}/chat/completions`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${Array.isArray(apiKey) ? apiKey[0] : apiKey.split(',')[0].trim()}`
-                },
-                body: JSON.stringify({
-                    model: model,
-                    messages: messages,
-                    tools: availableTools.length > 0 ? availableTools : undefined,
-                    tool_choice: availableTools.length > 0 ? "auto" : undefined,
-                    stream: false
-                }),
+            // 3.1 LLM 思考 (使用 chat.js)
+            const currentApiType = apiType || 'chat_completions';
+
+            const response = await createChatCompletion({
+                baseUrl: baseUrl,
+                apiKey: apiKey,
+                model: model,
+                apiType: currentApiType,
+                messages: messages,
+                tools: availableTools.length > 0 ? availableTools : undefined,
+                tool_choice: availableTools.length > 0 ? "auto" : undefined,
+                stream: false,
                 signal: signal
             });
 
-            if (!response.ok) {
-                const err = `API Call failed: ${response.status}`;
-                log(`[Error] ${err}`);
-                return `[Sub-Agent Error] ${err}`;
+            let messageContent = "";
+            let toolCalls = [];
+            let message = {};
+
+            if (currentApiType === 'responses' && response.output) {
+                // Responses API 处理逻辑
+                // 1. 提取文本消息
+                const textItems = response.output.filter(item => item.type === 'message');
+                textItems.forEach(item => {
+                    if (item.content) {
+                        item.content.forEach(c => {
+                            if (c.type === 'output_text') messageContent += c.text;
+                        });
+                    }
+                });
+
+                // 2. 提取工具调用
+                const functionCallItems = response.output.filter(item => item.type === 'function_call');
+                toolCalls = functionCallItems.map(item => ({
+                    id: item.call_id,
+                    type: 'function',
+                    function: {
+                        name: item.name,
+                        arguments: item.arguments
+                    }
+                }));
+
+                // 3. 构造兼容的 message 对象供后续逻辑使用
+                message = {
+                    role: 'assistant',
+                    content: messageContent || null,
+                    tool_calls: toolCalls.length > 0 ? toolCalls : undefined
+                };
+
+            } else {
+                // Chat Completions API 处理逻辑
+                message = response.choices[0].message;
+                messageContent = message.content;
+                toolCalls = message.tool_calls || [];
             }
 
-            const data = await response.json();
-            const message = data.choices[0].message;
+            // 将助手回复（或转换后的回复）推入历史
             messages.push(message);
 
             // 3.2 决策
-            if (message.content) {
-                log(`[Thought] ${message.content}`);
+            if (messageContent) {
+                log(`[Thought] ${messageContent}`);
             }
 
-            if (!message.tool_calls || message.tool_calls.length === 0) {
+            if (!toolCalls || toolCalls.length === 0) {
                 log(`[Result] Task Completed.`);
-                // 返回最终结果
-                return message.content || "[Sub-Agent finished without content]";
+                return messageContent || "[Sub-Agent finished without content]";
             }
 
             // 3.3 执行工具
-            for (const toolCall of message.tool_calls) {
+            for (const toolCall of toolCalls) {
                 if (signal && signal.aborted) throw new Error("Sub-Agent execution aborted.");
 
                 const toolName = toolCall.function.name;
@@ -766,7 +789,6 @@ ${userContext || 'No additional context provided.'}
                     toolArgsObj = JSON.parse(toolCall.function.arguments);
                     log(`[Action] Calling ${toolName}...`);
 
-                    // 执行
                     const result = await invokeMcpTool(toolName, toolArgsObj, signal, null);
 
                     if (typeof result === 'string') toolResult = result;
@@ -797,7 +819,6 @@ ${userContext || 'No additional context provided.'}
 
     log(`[Stop] Reached maximum step limit.`);
 
-    // 定义静态兜底报告生成逻辑 (以防最后一次 LLM 调用失败)
     const generateStaticReport = () => {
         let report = `[Sub-Agent Warning] Execution stopped because the maximum step limit (${MAX_STEPS}) was reached.\n\n`;
         const lastMessage = messages[messages.length - 1];
@@ -815,7 +836,7 @@ ${userContext || 'No additional context provided.'}
         return report;
     };
 
-    // 达到步数限制后，让 AI 总结当前进展
+    // 达到步数限制后，让 AI 总结
     try {
         log(`[System] Requesting status summary from Sub-Agent...`);
         messages.push({
@@ -823,37 +844,42 @@ ${userContext || 'No additional context provided.'}
             content: "SYSTEM ALERT: You have reached the maximum number of steps allowed. Please provide a concise summary of:\n1. What has been successfully completed.\n2. What is the current status/obstacles.\n3. What specific actions remain to be done.\nDo not use any tools, just answer with text."
         });
 
-        const summaryResponse = await fetch(`${baseUrl}/chat/completions`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${Array.isArray(apiKey) ? apiKey[0] : apiKey.split(',')[0].trim()}`
-            },
-            body: JSON.stringify({
-                model: model,
-                messages: messages,
-                tools: availableTools.length > 0 ? availableTools : undefined,
-                tool_choice: availableTools.length > 0 ? "auto" : undefined,
-                stream: false
-            }),
+        // (使用 chat.js)
+        const currentApiType = apiType || 'chat_completions';
+        const summaryResponse = await createChatCompletion({
+            baseUrl: baseUrl,
+            apiKey: apiKey,
+            model: model,
+            apiType: currentApiType,
+            messages: messages,
+            tools: availableTools.length > 0 ? availableTools : undefined,
+            tool_choice: availableTools.length > 0 ? "auto" : undefined,
+            stream: false,
             signal: signal
         });
 
-        if (summaryResponse.ok) {
-            const data = await summaryResponse.json();
-            const summaryContent = data.choices[0].message.content;
-            if (summaryContent) {
-                return `[Sub-Agent Timeout Summary]\n${summaryContent}\n\n(System Note: The sub-agent stopped because the step limit of ${MAX_STEPS} was reached. You may need to ask the user to increase 'planning_level' or guide the sub-agent to continue from this state.)`;
-            }
+        let summaryContent = "";
+        if (currentApiType === 'responses' && summaryResponse.output) {
+             const textItems = summaryResponse.output.filter(item => item.type === 'message');
+             textItems.forEach(item => {
+                if (item.content) {
+                    item.content.forEach(c => {
+                        if (c.type === 'output_text') summaryContent += c.text;
+                    });
+                }
+            });
         } else {
-            log(`[Error] Summary API call failed: ${summaryResponse.status}`);
+            summaryContent = summaryResponse.choices[0].message.content;
+        }
+
+        if (summaryContent) {
+            return `[Sub-Agent Timeout Summary]\n${summaryContent}\n\n(System Note: The sub-agent stopped because the step limit of ${MAX_STEPS} was reached...)`;
         }
     } catch (e) {
         log(`[Error] Failed to generate summary: ${e.message}`);
     }
 
-    // 如果总结失败，返回静态报告
-    return generateStaticReport() + `\n\n[Instruction for Main Agent]: Please check the conversation context or files to see if the task was partially completed.`;
+    return generateStaticReport() + `\n\n[Instruction for Main Agent]: Please check the conversation context...`;
 }
 
 // --- Execution Handlers ---
@@ -921,62 +947,61 @@ const handlers = {
     // 1. Glob Files
     glob_files: async ({ pattern, path: searchPath }, context, signal) => {
         try {
-            let rootDir = "";
+            if (!searchPath) {
+                return "Error: You MUST provide a 'path' argument to specify the directory.";
+            }
+
+            let rootDir = resolvePath(searchPath);
+            
+            const parsed = path.parse(rootDir);
+            if (parsed.root === rootDir && rootDir.length <= 3) {
+                // Windows: C:\, Linux/Mac: /
+                return `Error: Scanning the system root directory ('${rootDir}') is not allowed due to performance and security reasons. Please specify a more specific directory (e.g., project folder).`;
+            }
+
             let globPattern = pattern;
 
-            // 检测是否以盘符开头 (Win) 或 / 开头 (Unix)，且 searchPath 未指定或为默认
             const isAbsolutePath = path.isAbsolute(pattern) || /^[a-zA-Z]:[\\/]/.test(pattern);
-
             if (isAbsolutePath) {
                 const magicIndex = pattern.search(/[*?\[{]/);
                 if (magicIndex > -1) {
                     const basePath = pattern.substring(0, magicIndex);
                     const lastSep = Math.max(basePath.lastIndexOf('/'), basePath.lastIndexOf('\\'));
-
                     if (lastSep > -1) {
-                        rootDir = basePath.substring(0, lastSep + 1); // 包含分隔符
-                        globPattern = pattern.substring(lastSep + 1); // 剩余部分作为 pattern
-
-                        if (!searchPath || searchPath === '~' || searchPath === os.homedir()) {
-                            searchPath = rootDir;
-                        } else {
-                            globPattern = pattern.replace(normalizePath(resolvePath(searchPath)), '').replace(/^[\\/]/, '');
+                        const extractedRoot = basePath.substring(0, lastSep + 1);
+                        if (extractedRoot.startsWith(rootDir)) {
+                            // 优化：如果 pattern 指定的目录在 searchPath 内部，缩小搜索范围
+                            rootDir = extractedRoot;
+                            globPattern = pattern.substring(lastSep + 1);
                         }
                     }
                 }
             }
-            // -----------------------------------------------------------
 
-            rootDir = resolvePath(searchPath);
             if (!fs.existsSync(rootDir)) return `Error: Directory not found: ${rootDir}`;
             if (!isPathSafe(rootDir)) return `[Security Block] Access restricted.`;
 
             const results = [];
-            // 如果 globPattern 为空（完全被提取为路径），默认匹配所有
             const regex = globToRegex(globPattern || "**/*");
             if (!regex) return "Error: Invalid glob pattern.";
 
             const MAX_RESULTS = 5000;
             const normalizedRoot = normalizePath(rootDir);
 
-            // 传递 signal 给 walkDir
             for await (const filePath of walkDir(rootDir, 20, 0, signal)) {
                 if (signal && signal.aborted) throw new Error("Operation aborted by user.");
 
                 const normalizedFilePath = normalizePath(filePath);
-
-                // 计算相对路径
                 let relativePath = normalizedFilePath.replace(normalizedRoot, '');
                 if (relativePath.startsWith('/')) relativePath = relativePath.slice(1);
 
-                // 匹配相对路径 或 文件名
                 if (regex.test(relativePath) || regex.test(path.basename(filePath))) {
                     results.push(filePath);
                 }
                 if (results.length >= MAX_RESULTS) break;
             }
 
-            if (results.length === 0) return `No files matched in ${rootDir}.`;
+            if (results.length === 0) return `No files matched pattern '${globPattern}' in ${rootDir}.`;
             return results.join('\n') + (results.length >= MAX_RESULTS ? `\n... (Limit reached: ${MAX_RESULTS})` : '');
         } catch (e) {
             return `Glob error: ${e.message}`;
@@ -986,7 +1011,19 @@ const handlers = {
     // 2. Grep Search
     grep_search: async ({ pattern, path: searchPath, glob, output_mode = 'content', multiline = false }, context, signal) => {
         try {
+            // 强制路径检查
+            if (!searchPath) {
+                return "Error: You MUST provide a 'path' argument to specify the directory.";
+            }
+
             const rootDir = resolvePath(searchPath);
+
+            // 安全检查：禁止扫描根目录
+            const parsed = path.parse(rootDir);
+            if (parsed.root === rootDir && rootDir.length <= 3) {
+                return `Error: Grep searching the system root directory ('${rootDir}') is not allowed. Please specify a project directory.`;
+            }
+
             if (!fs.existsSync(rootDir)) return `Error: Directory not found: ${rootDir}`;
 
             const regexFlags = multiline ? 'gmi' : 'gi';
@@ -1000,18 +1037,16 @@ const handlers = {
 
             const results = [];
             let matchCount = 0;
-            const MAX_SCANNED = 5000; // 限制扫描文件数防止卡死
+            const MAX_SCANNED = 5000; 
             let scanned = 0;
 
-            // 传递 signal 给 walkDir
             for await (const filePath of walkDir(rootDir, 20, 0, signal)) {
-                if (signal && signal.aborted) throw new Error("Operation aborted by user."); // 响应中断
+                if (signal && signal.aborted) throw new Error("Operation aborted by user.");
                 if (scanned++ > MAX_SCANNED) {
-                    results.push(`\n[System] Scan limit reached (${MAX_SCANNED} files). Please narrow down your search path.`);
+                    results.push(`\n[System] Scan limit reached (${MAX_SCANNED} files). Please narrow down your search path or use a glob filter.`);
                     break;
                 }
 
-                // Glob 过滤
                 if (globRegex) {
                     const normalizedFilePath = normalizePath(filePath);
                     let relativePath = normalizedFilePath.replace(normalizedRoot, '');
@@ -1020,15 +1055,14 @@ const handlers = {
                     if (!globRegex.test(relativePath) && !globRegex.test(path.basename(filePath))) continue;
                 }
 
-                // 跳过二进制文件
                 const ext = path.extname(filePath).toLowerCase();
-                if (['.png', '.jpg', '.jpeg', '.gif', '.pdf', '.exe', '.bin', '.zip', '.node', '.dll', '.db'].includes(ext)) continue;
+                if (['.png', '.jpg', '.jpeg', '.gif', '.pdf', '.exe', '.bin', '.zip', '.node', '.dll', '.db', '.pyc'].includes(ext)) continue;
 
                 try {
                     const stats = await fs.promises.stat(filePath);
-                    if (stats.size > 1024 * 1024) continue; // 跳过大文件
+                    if (stats.size > 1024 * 1024) continue; 
 
-                    const content = await fs.promises.readFile(filePath, { encoding: 'utf-8', signal }); // [修改] 传递 signal
+                    const content = await fs.promises.readFile(filePath, { encoding: 'utf-8', signal });
 
                     if (output_mode === 'files_with_matches') {
                         if (searchRegex.test(content)) {
@@ -1046,7 +1080,8 @@ const handlers = {
                                 const offset = m.index;
                                 const lineNum = content.substring(0, offset).split(/\r?\n/).length;
                                 const lineContent = lines[lineNum - 1].trim();
-                                results.push(`${filePath}:${lineNum}: ${lineContent.substring(0, 100)}`);
+                                // 限制单行预览长度
+                                results.push(`${filePath}:${lineNum}: ${lineContent.substring(0, 150)}`);
                             });
                         }
                     }

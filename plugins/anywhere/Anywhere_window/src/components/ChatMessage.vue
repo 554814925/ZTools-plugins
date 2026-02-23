@@ -25,6 +25,45 @@ const editInputRef = ref(null);
 const isEditing = ref(false);
 const editedContent = ref('');
 
+// 计算耗时或显示开始时间
+const timeDisplay = computed(() => {
+  const msg = props.message;
+  // 获取开始时间：优先取 startTime (AI)，其次取 timestamp (User/AI旧数据)
+  const startTime = msg.startTime || msg.timestamp;
+  if (!startTime) return '';
+
+  const formattedStart = formatTimestamp(startTime);
+
+  // 如果是 AI 消息且有结束时间，追加耗时
+  if (msg.role === 'assistant' && msg.endTime && msg.startTime) {
+    const duration = (msg.endTime - msg.startTime) / 1000;
+    let durationStr = '';
+    if (duration < 60) {
+        durationStr = `${duration.toFixed(1)} s`;
+    } else {
+        durationStr = `${(duration / 60).toFixed(1)} min`;
+    }
+    // 格式：2023-01-01 12:00 (3.5 s)
+    return `${formattedStart} (${durationStr})`;
+  }
+
+  return formattedStart;
+});
+
+// 优化 Loading 显示逻辑：如果是最后一条消息 && 正在加载 && 没有正在进行的思考内容
+const showBubbleLoading = computed(() => {
+  if (!props.isLastMessage || !props.isLoading) return false;
+  
+  // 如果有 reasoning_content 且状态是 thinking，说明正在思考，不显示正文 loading
+  if (props.message.reasoning_content && props.message.status === 'thinking') {
+    return false;
+  }
+  
+  // 正文为空时才显示 loading
+  const contentEmpty = !props.message.content || (Array.isArray(props.message.content) && props.message.content.length === 0);
+  return contentEmpty && (!props.message.tool_calls || props.message.tool_calls.length === 0);
+});
+
 // 格式化工具参数为易读的 JSON 字符串
 const formatToolArgs = (argsString) => {
   try {
@@ -64,44 +103,6 @@ const preprocessKatex = (text) => {
   processedText = processedText.replace(/(?<!\\)\\tag\s*\{([^{}]+)\}/g, '\\qquad \\text{($1)}');
 
   return processedText;
-};
-
-const processFilePaths = (text) => {
-  if (!text) return '';
-
-  // 辅助函数：生成链接 HTML
-  const createLink = (pathStr) => {
-    // 清洗末尾的标点符号 (如句号、逗号、括号)
-    const cleanPath = pathStr.replace(/[.,;:)\]。，；：]+$/, '').trim();
-    
-    // 过滤过短的误判
-    if (cleanPath.length < 2) return pathStr;
-    // 排除单纯的根目录符号
-    if (cleanPath === '/' || cleanPath === '~' || cleanPath === '\\') return pathStr;
-
-    // 生成带 data-filepath 的链接，href 设为 void(0) 防止跳转
-    return `<a href="javascript:void(0)" data-filepath="${cleanPath}" class="local-file-link" title="点击打开文件: ${cleanPath}">${cleanPath}</a>`;
-  };
-
-  let processed = text;
-
-  // 1. 处理 Windows 路径 (盘符开头，如 C:\Users)
-  // (?<!["'=]) 避免匹配到 HTML 属性中的路径
-  processed = processed.replace(/(?<!["'=])([a-zA-Z]:\\[^:<>"|?*\n\r\t]+)/g, (match) => {
-    return createLink(match);
-  });
-
-  // 2. 处理 Unix/Linux/macOS 路径 (/ 或 ~ 开头)
-  // (?<!["'=:\w]) 避免匹配 URL (http://) 或 HTML 属性
-  // (^|[\s"'(>]) 确保路径出现在行首、空格、引号或括号之后
-  processed = processed.replace(/(^|[\s"'(>])((?:\/|~)[^:<>"|?*\n\r\t\s]+)/g, (match, prefix, pathStr) => {
-    // 二次校验：防止匹配 URL 的一部分 (如 https://example.com/foo)
-    // 如果 prefix 是空或者是空白符，通常是安全的。
-    // 如果是 > (HTML标签结束)，也是安全的。
-    return prefix + createLink(pathStr);
-  });
-
-  return processed;
 };
 
 const mermaidConfig = computed(() => ({
@@ -223,84 +224,39 @@ const renderedMarkdownContent = computed(() => {
     return placeholder;
   };
 
-  // 1. HTML 转义辅助函数 (用于显示文本)
-  const escapeHtml = (unsafe) => {
-    return unsafe
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  };
-
-  // 2. 属性转义辅助函数 (本逻辑中已改用 encodeURIComponent，此函数暂留作备用)
-  const escapeAttr = (unsafe) => {
-    return unsafe.replace(/"/g, "&quot;");
-  };
-
-  // 3. 保护数学公式 (最高优先级)
-  let processedContent = formattedContent.replace(/(\$\$)([\s\S]*?)(\$\$)/g, (match) => addPlaceholder(match));
+  // 1. 保护代码块和数学公式不被 DOMPurify 处理
+  let processedContent = formattedContent.replace(/(^|[^\\])(`+)([\s\S]*?)\2/g, (match, prefix, delimiter, inner) => {
+    return prefix + addPlaceholder(delimiter + inner + delimiter);
+  });
+  processedContent = processedContent.replace(/(\$\$)([\s\S]*?)(\$\$)/g, (match) => addPlaceholder(match));
   processedContent = processedContent.replace(/(\$)(?!\s)([^$\n]+?)(?<!\s)(\$)/g, (match) => addPlaceholder(match));
-
-  // 4. 保护块级代码 (```...```)
-  // [修改] 优化正则以支持带缩进的代码块（例如列表中的代码块）
-  // 原正则: /(^|\n)(```)([\s\S]*?)\2/g 
-  // 新正则: /(^|\n)([ \t]*)(```)([\s\S]*?)\3/g  <- 增加了 ([ \t]*) 捕获缩进，并将反向引用改为 \3
-  processedContent = processedContent.replace(/(^|\n)([ \t]*)(```)([\s\S]*?)\3/g, (match) => {
-    return addPlaceholder(match);
-  });
-
-  // 5. 处理行内代码 (`...`) - 在此处检测文件路径并生成链接
-  processedContent = processedContent.replace(/(^|[^\\])(`+)([\s\S]*?)\2/g, (match, prefix, delimiter, inner) => {
-    const trimmedInner = inner.trim();
-    
-    // 路径判定逻辑：
-    // 1. 包含 Windows 盘符 (C:\) 或 Unix 路径符 (/ 或 ~)
-    // 2. 不包含换行符
-    // 3. 长度大于 1
-    const isWinPath = /^[a-zA-Z]:\\/.test(trimmedInner);
-    const isUnixPath = /^[\/~]/.test(trimmedInner);
-    const hasNewline = trimmedInner.includes('\n');
-
-    if ((isWinPath || isUnixPath) && !hasNewline && trimmedInner.length > 1) {
-      // 清洗末尾标点
-      const cleanPath = trimmedInner.replace(/[.,;:)\]。，；：]+$/, '');
-      
-      // 1. 将 <a> 包裹在 <code> 外面，避免 HTML 解析器截断或隐藏代码块内容。
-      // 2. 使用 encodeURIComponent 编码路径，解决空格和中文导致的属性解析错误。
-      // 3. 添加 style="text-decoration:none;" 防止下划线干扰代码块样式。
-      const linkHtml = `<a href="#" data-filepath="${encodeURIComponent(cleanPath)}" class="local-file-link" style="text-decoration:none;" title="点击打开文件"><code class="inline-code-tag">${escapeHtml(inner)}</code></a>`;
-      return prefix + addPlaceholder(linkHtml);
-    }
-
-    // 普通代码块，正常显示
-    const codeHtml = `<code class="inline-code-tag">${escapeHtml(inner)}</code>`;
-    return prefix + addPlaceholder(codeHtml);
-  });
-
-  // 6. 加粗处理
   processedContent = processedContent.replace(/(^|[^\\])\*\*([^\n]+?)\*\*/g, '$1<strong>$2</strong>');
 
-  // 7. HTML 清洗
+  // 2. 进行 HTML 清洗
   let sanitizedPart = DOMPurify.sanitize(processedContent, {
     ADD_TAGS: ['video', 'audio', 'source'],
     USE_PROFILES: { html: true, svg: true, svgFilters: true },
-    // 确保允许 data-filepath 和 onclick
-    ADD_ATTR: ['style', 'data-filepath', 'onclick', 'target', 'title'],
+    ADD_ATTR: ['style']
   });
 
+  // 全局将 &gt; 恢复为 >
   sanitizedPart = sanitizedPart.replace(/&gt;/g, '>');
 
-  // 8. 恢复受保护的内容
+  // 3. 恢复受保护的内容（代码块等）
   let finalContent = sanitizedPart.replace(/__PROTECTED_CONTENT_\d+__/g, (placeholder) => {
     return protectedMap.get(placeholder) || placeholder;
   });
 
-  // 9. 表格包裹
+  // 匹配 <table...> 标签并包裹 div，利用正则确保只匹配实际的标签
   finalContent = finalContent.replace(/<table/g, '<div class="table-scroll-wrapper"><table').replace(/<\/table>/g, '</table></div>');
 
-  if (!finalContent && props.message.role === 'assistant') return ' ';
-  return finalContent || ' ';
+  return finalContent || '';
+});
+
+const hasContentToShow = computed(() => {
+  const hasText = renderedMarkdownContent.value && renderedMarkdownContent.value.trim().length > 0;
+  const hasTools = props.message.tool_calls && props.message.tool_calls.length > 0;
+  return hasText || hasTools || isEditing.value || showBubbleLoading.value;
 });
 
 const shouldShowCollapseButton = computed(() => {
@@ -394,19 +350,19 @@ const truncateFilename = (filename, maxLength = 30) => {
             <span class="ai-name">{{ message.aiName }}</span>
             <span v-if="message.voiceName" class="voice-name">({{ message.voiceName }})</span>
           </div>
-          <span class="timestamp-row" v-if="message.completedTimestamp">{{ formatTimestamp(message.completedTimestamp)
-          }}</span>
+          <span class="timestamp-row">{{ timeDisplay }}</span>
         </div>
       </div>
 
       <Bubble class="ai-bubble" placement="start" shape="corner" maxWidth="100%"
-        :loading="isLastMessage && isLoading && renderedMarkdownContent === ' ' && (!message.tool_calls || message.tool_calls.length === 0)">
+        :class="{ 'no-content': !hasContentToShow }"
+        :loading="showBubbleLoading">
         <template #header>
           <Thinking v-if="message.reasoning_content && message.reasoning_content.trim().length > 0" maxWidth="90%"
             :content="(message.reasoning_content || '').trim()" :modelValue="false" :status="message.status">
           </Thinking>
         </template>
-        <template #content>
+        <template #content v-if="hasContentToShow">
           <div v-if="!isEditing" class="markdown-wrapper" :class="{ 'collapsed': isCollapsed }">
             <XMarkdown :markdown="renderedMarkdownContent" :is-dark="isDarkMode" :enable-latex="true"
               :mermaid-config="mermaidConfig" :default-theme-mode="isDarkMode ? 'dark' : 'light'"
@@ -513,6 +469,7 @@ const truncateFilename = (filename, maxLength = 30) => {
   flex-direction: column;
   overflow-x: hidden;
   padding: 0px;
+  --bubble-radius: 12px;
 }
 
 .message-wrapper {
@@ -539,7 +496,7 @@ const truncateFilename = (filename, maxLength = 30) => {
 .message-meta-header {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0px;
   margin-bottom: 4px;
   font-size: 12px;
   color: var(--el-text-color-secondary);
@@ -552,14 +509,16 @@ const truncateFilename = (filename, maxLength = 30) => {
 
 .ai-meta-header {
   flex-direction: row;
-  align-items: flex-start;
+  align-items: center;
+  margin-bottom: 4px;
 }
 
 .meta-info-column {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  line-height: 1.3;
+  line-height: 1.2;
+  gap: 0px;
 }
 
 .meta-name-row {
@@ -570,8 +529,8 @@ const truncateFilename = (filename, maxLength = 30) => {
 
 .timestamp-row {
   font-size: 11px;
-  color: var(--el-text-color-placeholder);
-  margin-top: 1px;
+  color: var(--el-text-color-primary);
+  margin-top: 2px;
 }
 
 .chat-avatar-top {
@@ -592,8 +551,8 @@ const truncateFilename = (filename, maxLength = 30) => {
 
 .ai-avatar {
   border-radius: 6px;
+  margin-right: 10px;
 }
-
 .ai-name {
   font-weight: 700;
   font-size: 13px;
@@ -605,7 +564,7 @@ const truncateFilename = (filename, maxLength = 30) => {
 
 .chat-message .user-bubble {
   :deep(.el-bubble-content-wrapper .el-bubble-content) {
-    border-radius: 18px;
+    border-radius: var(--bubble-radius);
     background-color: var(--el-bg-color-userbubble);
     padding-top: 10px;
     padding-bottom: 10px;
@@ -627,6 +586,7 @@ html.dark .chat-message .user-bubble {
 
 .chat-message .ai-bubble {
   :deep(.el-bubble-content-wrapper .el-bubble-content) {
+    border-radius: var(--bubble-radius);
     background-color: transparent;
     padding-left: 4px;
     padding-right: 0px;
@@ -636,6 +596,12 @@ html.dark .chat-message .user-bubble {
 
   :deep(.el-bubble-content-wrapper .el-bubble-footer) {
     margin-top: 0;
+  }
+}
+
+.chat-message .ai-bubble.no-content {
+  :deep(.el-bubble-content) {
+    display: none !important;
   }
 }
 
@@ -666,8 +632,7 @@ html.dark .chat-message .ai-bubble {
     max-width: 100%;
     overflow-x: auto;
     white-space: pre;
-    box-sizing: border-box;
-    border-radius: 6px;
+    border-radius: var(--bubble-radius) !important;
   }
 
   :deep(.katex) {
@@ -1285,6 +1250,7 @@ html.dark .ai-name {
 }
 
 html.dark .ai-bubble :deep(.el-thinking .trigger) {
+  border-radius: var(--bubble-radius) !important;
   background-color: var(--el-fill-color-darker, #2c2e33);
   color: var(--el-text-color-primary, #F9FAFB);
   border-color: var(--el-border-color-dark, #373A40);
@@ -1306,6 +1272,7 @@ html.dark .ai-bubble :deep(.el-thinking-popper .el-popper__arrow::before) {
 }
 
 .ai-bubble :deep(.el-thinking .content pre) {
+  border-radius: var(--bubble-radius) !important;
   max-width: 100%;
   margin-bottom: 10px;
   white-space: pre-wrap;
@@ -1342,7 +1309,7 @@ html.dark .ai-bubble :deep(.el-thinking .content pre) {
   :deep(.el-collapse-item__header) {
     background-color: var(--el-fill-color-light);
     border: 1px solid var(--el-border-color-lighter);
-    border-radius: 8px;
+    border-radius: var(--bubble-radius);
     padding: 0 12px;
     font-size: 13px;
     transition: border-radius 0.2s;
@@ -1358,8 +1325,8 @@ html.dark .ai-bubble :deep(.el-thinking .content pre) {
     background-color: transparent;
     border: 1px solid var(--el-border-color-lighter);
     border-top: none;
-    border-bottom-left-radius: 8px;
-    border-bottom-right-radius: 8px;
+    border-bottom-left-radius: var(--bubble-radius);
+    border-bottom-right-radius: var(--bubble-radius);
   }
 
   :deep(.el-collapse-item__content) {
@@ -1499,6 +1466,10 @@ html.dark .stop-btn-wrapper {
   }
 }
 
+.tool-call-details .tool-detail-section pre {
+    border-radius: var(--bubble-radius);
+}
+
 .tool-call-details .tool-detail-section pre::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -1567,19 +1538,31 @@ html.dark .tool-call-details .tool-detail-section pre::-webkit-scrollbar-thumb:h
   background: #999;
 }
 
-:deep(.local-file-link) {
-  color: var(--el-color-primary);
-  text-decoration: underline;
-  text-decoration-style: dashed;
-  text-underline-offset: 4px;
-  cursor: pointer;
-  word-break: break-all;
-  font-weight: 500;
-}
+:deep(.markdown-wrapper) {
 
-:deep(.local-file-link:hover) {
-  opacity: 0.8;
-  background-color: rgba(var(--el-color-primary-rgb), 0.1);
-  border-radius: 4px;
+  .inline-code-tag {
+    &:not(pre > code) {
+      cursor: pointer !important;
+      pointer-events: auto !important;
+      position: relative;
+      z-index: 1;
+
+      transition: all 0.2s ease;
+      border-radius: 4px;
+      padding: 2px 5px;
+      margin: 0 2px;
+      border: 1px solid transparent;
+
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.08);
+        border-color: rgba(0, 0, 0, 0.12);
+      }
+
+      &:active {
+        background-color: var(--el-color-primary-light-10) !important;
+        transform: scale(0.98);
+      }
+    }
+  }
 }
 </style>

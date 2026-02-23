@@ -1,12 +1,12 @@
 {
   "app": {
     "header": {
-      "chats": "Чаты 💬",
-      "prompts": "Быстрые ассистенты 🚀",
-      "mcp": "MCP Серверы 🔧",
-      "skills": "Навыки 📚",
-      "providers": "Провайдеры ☁️",
-      "settings": "Настройки ⚙️",
+      "chats": "Чаты",
+      "prompts": "Быстрые ассистенты",
+      "mcp": "MCP Серверы",
+      "skills": "Навыки",
+      "providers": "Провайдеры",
+      "settings": "Настройки",
       "help": "Руководство"
     },
     "tabs": {
@@ -449,6 +449,11 @@
     "moveUpTooltip": "Переместить вверх",
     "moveDownTooltip": "Переместить вниз",
     "deleteProviderTooltip": "Удалить провайдера",
+    "apiTypeTooltip": "Выберите протокол API",
+    "apiTypes": {
+        "chatCompletions": "OpenAI-Chat",
+        "responses": "OpenAI-Response"
+    },
     "apiKeyLabel": "Ключ API",
     "apiKeyPlaceholder": "Введите ключ API (можно несколько, через запятую)",
     "apiKeyDescription": "Вы можете ввести несколько ключей API, разделенных запятыми.",
