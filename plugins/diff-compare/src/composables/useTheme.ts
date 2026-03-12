@@ -72,7 +72,18 @@ const createThemeInstance = () => {
             dark = themeMode.value === 'dark'
         }
         isDark.value = dark
-        document.documentElement.classList.toggle('dark', dark)
+
+        // 禁用过渡动画，避免切换时闪烁
+        document.documentElement.classList.add('no-theme-transition')
+
+        requestAnimationFrame(() => {
+            document.documentElement.classList.toggle('dark', dark)
+
+            // 恢复过渡动画，确保下次切换能平滑过渡
+            requestAnimationFrame(() => {
+                document.documentElement.classList.remove('no-theme-transition')
+            })
+        })
     }
 
     /**

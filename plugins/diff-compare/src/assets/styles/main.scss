@@ -96,6 +96,14 @@
   --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.55), 0 8px 10px rgba(0, 0, 0, 0.40);
 }
 
+// 主题切换时禁用过渡，避免闪烁
+.no-theme-transition,
+.no-theme-transition *,
+.no-theme-transition *::before,
+.no-theme-transition *::after {
+  transition: none !important;
+}
+
 *,
 *::before,
 *::after {
