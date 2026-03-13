@@ -16,18 +16,12 @@ const handleClick = (e: MouseEvent) => {
 </script>
 
 <template>
-  <button 
-    class="cs-button" 
-    :class="[
-      `variant-${(variant || 'secondary').toLowerCase()}`,
-      `size-${size || 'md'}`,
-      { 'icon-only': iconOnly },
-      { 'is-disabled': disabled }
-    ]" 
-    :disabled="disabled" 
-    @click="handleClick" 
-    type="button"
-  >
+  <button class="cs-button" :class="[
+    `variant-${(variant || 'secondary').toLowerCase()}`,
+    `size-${size || 'md'}`,
+    { 'icon-only': iconOnly },
+    { 'is-disabled': disabled }
+  ]" :disabled="disabled" @click="handleClick" type="button">
     <slot></slot>
   </button>
 </template>
@@ -52,8 +46,8 @@ const handleClick = (e: MouseEvent) => {
   white-space: nowrap;
   user-select: none;
   overflow: hidden;
-  
-  transition: 
+
+  transition:
     background 0.2s ease,
     border-color 0.2s ease,
     color 0.2s ease,
@@ -76,7 +70,7 @@ const handleClick = (e: MouseEvent) => {
     filter: grayscale(0.5);
     box-shadow: none !important;
     transform: none !important;
-    
+
     :global(.light-theme) & {
       background: #f3f4f6 !important;
       color: #9ca3af !important;
@@ -103,6 +97,7 @@ const handleClick = (e: MouseEvent) => {
 
   :global(.light-theme) & {
     box-shadow: 0 4px 12px rgba(129, 140, 248, 0.3);
+
     &:hover:not(.is-disabled) {
       box-shadow: 0 8px 20px rgba(129, 140, 248, 0.4);
     }
@@ -170,9 +165,10 @@ const handleClick = (e: MouseEvent) => {
 .variant-ghost {
   background: transparent;
   color: var(--color-text-muted);
-  
+
   :global(.light-theme) & {
     color: #6b7280;
+
     &:hover:not(.is-disabled) {
       background: #f3f4f6;
       color: #111827;
@@ -180,7 +176,7 @@ const handleClick = (e: MouseEvent) => {
   }
 
   &:hover:not(.is-disabled) {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(0, 0, 0, 0.06);
     color: #fff;
   }
 }
@@ -259,7 +255,7 @@ const handleClick = (e: MouseEvent) => {
   color: var(--color-accent-blue);
   padding: 0;
   height: auto;
-  
+
   &:hover:not(.is-disabled) {
     text-decoration: underline;
     opacity: 0.8;
@@ -273,7 +269,11 @@ const handleClick = (e: MouseEvent) => {
   padding: 0 12px;
   font-size: 13px;
   border-radius: 10px;
-  &.icon-only { width: 32px; padding: 0; }
+
+  &.icon-only {
+    width: 32px;
+    padding: 0;
+  }
 }
 
 .size-md {
@@ -281,7 +281,11 @@ const handleClick = (e: MouseEvent) => {
   padding: 0 16px;
   font-size: 14px;
   border-radius: 12px;
-  &.icon-only { width: 40px; padding: 0; }
+
+  &.icon-only {
+    width: 40px;
+    padding: 0;
+  }
 }
 
 .size-lg {
@@ -290,6 +294,10 @@ const handleClick = (e: MouseEvent) => {
   font-size: 16px;
   border-radius: 14px;
   font-weight: 700;
-  &.icon-only { width: 52px; padding: 0; }
+
+  &.icon-only {
+    width: 52px;
+    padding: 0;
+  }
 }
 </style>

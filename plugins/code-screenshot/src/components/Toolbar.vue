@@ -1,16 +1,26 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { state, BG_GRADIENTS, SUPPORTED_LANGUAGES } from '@/store'
+import { useToast } from '@/libs/toast'
 import CsSelect from '@/libs/components/CsSelect.vue'
 import CsSwitch from '@/libs/components/CsSwitch.vue'
+import CsButton from '@/libs/components/CsButton.vue'
+import { Trash2 } from 'lucide-vue-next'
 
 // Map BG_GRADIENTS for CsSelect
 const themeOptions = computed(() =>
   BG_GRADIENTS.map(g => ({ ...g, label: g.name }))
 )
 
+const toast = useToast()
+
 const setPadding = (p: number) => {
   state.padding = p
+}
+
+const clearCode = () => {
+  state.code = ''
+  toast.success('已清空内容')
 }
 </script>
 
@@ -80,6 +90,17 @@ const setPadding = (p: number) => {
       <div class="toolbar-section">
         <span class="toolbar-label">语言</span>
         <CsSelect v-model="state.language" :options="SUPPORTED_LANGUAGES" placeholder="语言" />
+      </div>
+
+      <!-- Divider -->
+      <div class="toolbar-divider"></div>
+
+      <!-- Clear Action -->
+      <div class="toolbar-section">
+        <span class="toolbar-label">清空</span>
+        <CsButton variant="ghost" size="sm" :icon-only="true" @click="clearCode" title="清空内容">
+          <Trash2 :size="15" />
+        </CsButton>
       </div>
 
     </div>
@@ -214,10 +235,23 @@ const setPadding = (p: number) => {
   height: 24px;
   min-width: 30px;
 
+  &:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-text);
+    transform: translateY(-1px);
+  }
+
   &.active {
     background: var(--color-padding-btn-active);
     color: var(--color-padding-btn-active-text);
     box-shadow: var(--shadow-sm);
+  }
+
+  :global(.light-theme) & {
+    &:hover:not(.active) {
+      background: rgba(0, 0, 0, 0.04);
+      color: #000;
+    }
   }
 }
 </style>

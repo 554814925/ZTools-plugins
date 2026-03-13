@@ -426,15 +426,34 @@ onUnmounted(() => {
     padding: 9px var(--spacing-sm);
     cursor: pointer;
     color: var(--color-text-muted);
-    transition: all var(--transition-fast);
+    transition: all var(--transition-short);
     text-align: left;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.05);
+      background: var(--color-dropdown-hover);
       color: var(--color-text);
 
       .item-label {
         color: var(--color-text);
+      }
+
+      .item-desc {
+        color: var(--color-text-muted);
+      }
+    }
+
+    :global(.light-theme) & {
+      &:hover {
+        background: rgba(0, 0, 0, 0.05);
+        color: #000;
+
+        .item-label {
+          color: #000;
+        }
+
+        .item-desc {
+          color: #52525b;
+        }
       }
     }
 

@@ -110,11 +110,19 @@ const currentOption = () => {
     background: rgba(0, 0, 0, 0.04);
     border-color: rgba(0, 0, 0, 0.1);
     color: var(--color-text-light);
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.07);
+      border-color: rgba(0, 0, 0, 0.16);
+      color: var(--color-text);
+    }
   }
 
   &:hover {
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.14);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 
   &.is-open {
@@ -194,11 +202,13 @@ const currentOption = () => {
   &:hover {
     background: var(--color-dropdown-hover);
     color: var(--color-text);
+    padding-left: calc(var(--spacing-sm) + 2px);
   }
 
   &.is-selected {
-    background: rgba(56, 189, 248, 0.08);
+    background: rgba(56, 189, 248, 0.12);
     color: var(--color-accent-blue);
+    font-weight: 700;
   }
 }
 
