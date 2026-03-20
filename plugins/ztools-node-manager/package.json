@@ -4,7 +4,7 @@
   "main": "preload.js",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && copy plugin.json dist\\ && copy preload.js dist\\ && copy logo.png dist\\ && copy README.md dist\\",
+    "build": "vite build && cd dist && npm install --omit=dev",
     "preview": "vite preview",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
