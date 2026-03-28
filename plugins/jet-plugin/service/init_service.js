@@ -94,9 +94,7 @@ class InitService {
           let appInfoFileData = fs.readFileSync(appInfoFilePath);
           appInfoFileData = JSON.parse(appInfoFileData);
           dataDirectoryName = appInfoFileData.dataDirectoryName;
-          launchCommand =
-            installLocation +
-            "/Contents/MacOS/" +
+          launchCommand = installLocation + "/Contents/MacOS/" +
             appInfoFileData.launch[0].launcherPath.replace("../MacOS/", "");
           logo_path = window.ztools.getFileIcon(installLocation);
         }

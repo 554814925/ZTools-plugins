@@ -4,7 +4,7 @@ const features = require("./service/features")
 
 // 监听插件进入事件
 window.ztools.onPluginEnter(({ code, type, payload }) => {
-  console.log('Plugin entered:', code, type, payload)
+  console.info('Plugin entered:', code, type, payload)
 });
 
 // ztools 选项列表
