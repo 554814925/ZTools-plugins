@@ -15,7 +15,6 @@ const SCRIPTS_DIR = path.join(os.homedir(), '.automode-scripts');
 const TASK_PREFIX = 'AutoMode';
 const TASK_DARK = TASK_PREFIX + '_Dark';
 const TASK_LIGHT = TASK_PREFIX + '_Light';
-const LEGACY_TASK_UPDATER = TASK_PREFIX + '_Updater';
 const PS_DARK = path.join(SCRIPTS_DIR, 'switch-dark.ps1');
 const PS_LIGHT = path.join(SCRIPTS_DIR, 'switch-light.ps1');
 const VBS_DARK = path.join(SCRIPTS_DIR, 'switch-dark.vbs');
@@ -157,7 +156,7 @@ function enableScheduler(config) {
 }
 
 function disableScheduler() {
-  const tasks = [TASK_DARK, TASK_LIGHT, LEGACY_TASK_UPDATER];
+  const tasks = [TASK_DARK, TASK_LIGHT];
   const results = {};
 
   tasks.forEach(function(name) {

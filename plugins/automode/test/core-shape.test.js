@@ -5,7 +5,7 @@ const path = require('node:path');
 
 const rootDir = path.join(__dirname, '..');
 
-describe('schedule-only mode regression', () => {
+describe('schedule mode core shape', () => {
   let indexHtml;
   let preloadJs;
   let pluginManifest;
@@ -16,25 +16,21 @@ describe('schedule-only mode regression', () => {
     pluginManifest = JSON.parse(fs.readFileSync(path.join(rootDir, 'plugin.json'), 'utf8'));
   });
 
-  it('should remove sun-mode UI entry points from index.html', () => {
+  it('should keep the interface focused on schedule mode', () => {
     assert.ok(indexHtml.includes('定时模式'));
-    assert.ok(!indexHtml.includes('日出日落'));
-    assert.ok(!indexHtml.includes("switchMode('sun')"));
-    assert.ok(!indexHtml.includes('id="tabSun"'));
-    assert.ok(!indexHtml.includes('id="sunPanel"'));
-    assert.ok(!indexHtml.includes('id="sunToggle"'));
-    assert.ok(!indexHtml.includes('id="citySearch"'));
+    assert.ok(indexHtml.includes('id="enableToggle"'));
+    assert.ok(indexHtml.includes('id="darkH"'));
+    assert.ok(indexHtml.includes('id="lightH"'));
+    assert.ok(indexHtml.includes('id="btnDark"'));
+    assert.ok(indexHtml.includes('id="btnLight"'));
   });
 
-  it('should remove sun-mode APIs from preload.js', () => {
+  it('should expose only the schedule-mode preload surface', () => {
     assert.ok(preloadJs.includes('enableScheduler'));
-    assert.ok(!preloadJs.includes('enableSunScheduler'));
-    assert.ok(!preloadJs.includes('getUserLocation'));
-    assert.ok(!preloadJs.includes('searchCities'));
-    assert.ok(!preloadJs.includes('fetchSunTimes'));
-    assert.ok(!preloadJs.includes('automode-sun-config'));
-    assert.ok(!preloadJs.includes('sun-config.json'));
-    assert.ok(!preloadJs.includes('api.sunrise-sunset.org'));
+    assert.ok(preloadJs.includes('disableScheduler'));
+    assert.ok(preloadJs.includes('switchImmediate'));
+    assert.ok(preloadJs.includes('getTaskStatus'));
+    assert.ok(preloadJs.includes('getSavedConfig'));
   });
 
   it('should describe the plugin as schedule-only', () => {
