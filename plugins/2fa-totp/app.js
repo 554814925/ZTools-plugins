@@ -123,15 +123,25 @@
             const base32chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
             let bits = ""; let hex = "";
             base32 = base32.replace(/\s/g, "").replace(/=+$/, ""); 
+            
+            // 验证是否包含非法字符
             for (let i = 0; i < base32.length; i++) {
                 let val = base32chars.indexOf(base32.charAt(i).toUpperCase());
-                if (val === -1) continue;
+                if (val === -1) {
+                    throw new Error('Invalid Base32 character: ' + base32.charAt(i));
+                }
                 bits += val.toString(2).padStart(5, '0');
             }
+            
             for (let i = 0; i + 4 <= bits.length; i += 4) {
                 let chunk = bits.substr(i, 4);
                 hex = hex + parseInt(chunk, 2).toString(16);
             }
+            
+            if (hex.length === 0) {
+                throw new Error('Base32 decode resulted in empty hex');
+            }
+            
             return hex;
         }
         function getOTP(acc, isNext = false) {
@@ -230,6 +240,16 @@
                     } else if (oldType === 'steam') {
                         // 从 steam 切回时重置为默认值
                         modalForm.value.digits = 6;
+                    }
+                });
+
+                // 密钥自动清洗：转大写并去除空格
+                watch(() => modalForm.value.secret, (newVal) => {
+                    if (newVal) {
+                        const cleaned = newVal.toUpperCase().replace(/\s/g, '');
+                        if (cleaned !== newVal) {
+                            modalForm.value.secret = cleaned;
+                        }
                     }
                 });
 
@@ -422,20 +442,53 @@
                     const nameFieldValue = (modalForm.value.name || '').toString().trim();
                     const secretFieldValue = (modalForm.value.secret || '').toString().trim().replace(/\s/g, '');
                     
-                    // 1. 账号非空拦截
+                    let hasError = false;
+                    
+                    // 同时验证账号名称和密钥
                     if (!nameFieldValue) {
                         nameError.value = true;
-                        return;
+                        hasError = true;
                     }
                     
-                    // 2. 密钥非空拦截
                     if (!secretFieldValue) {
                         secretErrorMsg.value = '请输入密钥';
+                        secretError.value = true;
+                        hasError = true;
+                    }
+                    
+                    if (hasError) return;
+                    
+                    // Base32 解码校验
+                    try {
+                        const testHex = base32tohex(secretFieldValue);
+                        if (!testHex || testHex.length === 0) {
+                            secretErrorMsg.value = '密钥合法性验证失败';
+                            secretError.value = true;
+                            return;
+                        }
+                        
+                        // 尝试生成一次验证码来验证密钥完整性
+                        const testAccount = {
+                            secret: secretFieldValue,
+                            type: modalForm.value.type || 'totp',
+                            algorithm: modalForm.value.algorithm || 'SHA1',
+                            digits: modalForm.value.digits || 6,
+                            period: modalForm.value.period || 30,
+                            counter: modalForm.value.counter || 0
+                        };
+                        const testToken = getOTP(testAccount);
+                        if (testToken === 'Error' || !testToken) {
+                            secretErrorMsg.value = '密钥合法性验证失败';
+                            secretError.value = true;
+                            return;
+                        }
+                    } catch (e) {
+                        secretErrorMsg.value = '密钥合法性验证失败';
                         secretError.value = true;
                         return;
                     }
                     
-                    // 3. 校验通过，封存数据
+                    // 校验通过，封存数据
                     const secureAccount = {
                         ...JSON.parse(JSON.stringify(modalForm.value)),
                         name: nameFieldValue,
