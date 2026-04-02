@@ -4,7 +4,7 @@
   "title": "起个变量名",
   "description": "使用百度翻译起变量名称",
   "author": "jeffrey",
-  "version": "1.0.03",
+  "version": "1.0.04",
   "main": "index.html",
   "preload": "preload/services.js",
   "logo": "logo.png",
@@ -16,7 +16,7 @@
       "code": "fy",
       "explain": "起变量名",
       "icon": "logo.png",
-      "cmds": ["翻译", "fy"]
+      "cmds": ["起个变量名", "fy"]
     }
   ]
 }
