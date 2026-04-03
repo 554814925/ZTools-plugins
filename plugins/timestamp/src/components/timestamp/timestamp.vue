@@ -39,12 +39,8 @@ const localTimeFull = computed(() => {
 // 格式化本地日期
 const localTimeDate = computed(() => {
   if (!parsedDate.value) return '-'
-  return parsedDate.value.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    weekday: 'long',
-  })
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${parsedDate.value.getFullYear()}-${pad(parsedDate.value.getMonth() + 1)}-${pad(parsedDate.value.getDate())}`
 })
 
 // 时间戳(秒)
