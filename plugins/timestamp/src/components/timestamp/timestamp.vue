@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
   launchParam: {
@@ -70,6 +70,27 @@ const utcTime = computed(() => {
   if (!parsedDate.value) return '-'
   return parsedDate.value.toISOString().replace('T', ' ').substring(0, 19)
 })
+
+// 快捷键复制
+const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+const modKey = isMac ? 'metaKey' : 'ctrlKey'
+
+const handleKeyboard = (e: KeyboardEvent) => {
+  if (!e[modKey]) return
+  const num = parseInt(e.key)
+  if (num < 1 || num > 5) return
+
+  const values = [localTimeFull.value, localTimeDate.value, timestampSeconds.value, timestampMilliseconds.value, utcTime.value]
+  copyToClipboard(values[num - 1])
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyboard)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyboard)
+})
 </script>
 
 <template>
@@ -94,11 +115,11 @@ const utcTime = computed(() => {
             <div class="text-lg font-mono text-gray-900">{{ localTimeFull }}</div>
           </div>
           <button
-            class="copy-btn px-3 py-1 text-xs border border-gray-300 rounded hover:bg-blue-500 hover:text-white transition-colors cursor-pointer"
+            class="copy-btn px-3 py-2 text-xs border border-gray-300 rounded hover:bg-blue-500 hover:text-white transition-colors cursor-pointer"
             :data-copy="localTimeFull"
             @click="copyToClipboard(localTimeFull)"
           >
-            复制
+            复制 (⌘ + 1)
           </button>
         </div>
 
@@ -109,11 +130,11 @@ const utcTime = computed(() => {
             <div class="text-lg font-mono text-gray-900">{{ localTimeDate }}</div>
           </div>
           <button
-            class="copy-btn px-3 py-1 text-xs border border-gray-300 rounded hover:bg-blue-500 hover:text-white transition-colors cursor-pointer"
+            class="copy-btn px-3 py-2 text-xs border border-gray-300 rounded hover:bg-blue-500 hover:text-white transition-colors cursor-pointer"
             :data-copy="localTimeDate"
             @click="copyToClipboard(localTimeDate)"
           >
-            复制
+            复制 (⌘ + 2)
           </button>
         </div>
 
@@ -124,11 +145,11 @@ const utcTime = computed(() => {
             <div class="text-lg font-mono text-gray-900">{{ timestampSeconds }}</div>
           </div>
           <button
-            class="copy-btn px-3 py-1 text-xs border border-gray-300 rounded hover:bg-blue-500 hover:text-white transition-colors cursor-pointer"
+            class="copy-btn px-3 py-2 text-xs border border-gray-300 rounded hover:bg-blue-500 hover:text-white transition-colors cursor-pointer"
             :data-copy="timestampSeconds"
             @click="copyToClipboard(timestampSeconds)"
           >
-            复制
+            复制 (⌘ + 3)
           </button>
         </div>
 
@@ -139,11 +160,11 @@ const utcTime = computed(() => {
             <div class="text-lg font-mono text-gray-900">{{ timestampMilliseconds }}</div>
           </div>
           <button
-            class="copy-btn px-3 py-1 text-xs border border-gray-300 rounded hover:bg-blue-500 hover:text-white transition-colors cursor-pointer"
+            class="copy-btn px-3 py-2 text-xs border border-gray-300 rounded hover:bg-blue-500 hover:text-white transition-colors cursor-pointer"
             :data-copy="timestampMilliseconds"
             @click="copyToClipboard(timestampMilliseconds)"
           >
-            复制
+            复制 (⌘ + 4)
           </button>
         </div>
 
@@ -154,11 +175,11 @@ const utcTime = computed(() => {
             <div class="text-lg font-mono text-gray-900">{{ utcTime }}</div>
           </div>
           <button
-            class="copy-btn px-3 py-1 text-xs border border-gray-300 rounded hover:bg-blue-500 hover:text-white transition-colors cursor-pointer"
+            class="copy-btn px-3 py-2 text-xs border border-gray-300 rounded hover:bg-blue-500 hover:text-white transition-colors cursor-pointer"
             :data-copy="utcTime"
             @click="copyToClipboard(utcTime)"
           >
-            复制
+            复制 (⌘ + 5)
           </button>
         </div>
       </div>
