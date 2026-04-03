@@ -58,7 +58,7 @@ const timestampMilliseconds = computed(() => {
 // UTC 时间
 const utcTime = computed(() => {
   if (!parsedDate.value) return '-'
-  return formatDateTime(parsedDate.value) + ' UTC'
+  return parsedDate.value.toISOString().replace('T', ' ').substring(0, 19)
 })
 </script>
 
