@@ -67,8 +67,8 @@ export function msToUnit(ms: number, unit: TimestampUnit): string {
     case 'millisecond': return Math.floor(ms).toString()
     case 'nanosecond': {
       const intMs = Math.floor(ms)
-      const fracUs = Math.floor((ms - intMs) * 1000)
-      const nsStr = BigInt(intMs) * 1000000n + BigInt(fracUs) * 1000n
+      const fracMs = ms - intMs
+      const nsStr = BigInt(intMs) * 1000000n + BigInt(Math.round(fracMs * 1000000))
       return nsStr.toString()
     }
   }
@@ -82,7 +82,9 @@ export function unitToMs(value: string, unit: TimestampUnit): number | null {
     case 'millisecond': return parseInt(trimmed)
     case 'nanosecond': {
       const ns = BigInt(trimmed)
-      return Number(ns / 1000000n)
+      const ms = Number(ns / 1000000n)
+      const remNs = Number(ns % 1000000n)
+      return ms + remNs / 1000000
     }
   }
 }
@@ -108,7 +110,7 @@ export function formatRelativeTime(targetMs: number, nowMs: number): string {
   const MONTH = 30 * DAY
   const YEAR = 365 * DAY
 
-  if (absDiff < MINUTE) return '刚刚'
+  if (absDiff < MINUTE) return diff >= 0 ? '即刻' : '刚刚'
   if (absDiff < HOUR) return `${Math.floor(absDiff / MINUTE)} 分钟${suffix}`
   if (absDiff < DAY) return `${Math.floor(absDiff / HOUR)} 小时${suffix}`
   if (absDiff < MONTH) return `${Math.floor(absDiff / DAY)} 天${suffix}`

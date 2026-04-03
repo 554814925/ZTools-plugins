@@ -22,14 +22,14 @@ const viewYear = ref(tzNow.year)
 const viewMonth = ref(tzNow.month)
 
 // 选中状态（编辑中的临时值）
-const selYear = ref(props.modelValue ? dateToTzParts(new Date(props.modelValue), props.timezone).year : tzNow.year)
-const selMonth = ref(props.modelValue ? dateToTzParts(new Date(props.modelValue), props.timezone).month : tzNow.month)
-const selDay = ref(props.modelValue ? dateToTzParts(new Date(props.modelValue), props.timezone).day : tzNow.day)
-const selHour = ref(props.modelValue ? dateToTzParts(new Date(props.modelValue), props.timezone).hour : tzNow.hour)
-const selMinute = ref(props.modelValue ? dateToTzParts(new Date(props.modelValue), props.timezone).minute : tzNow.minute)
-const selSecond = ref(props.modelValue ? dateToTzParts(new Date(props.modelValue), props.timezone).second : tzNow.second)
+const selYear = ref(props.modelValue !== null ? dateToTzParts(new Date(props.modelValue), props.timezone).year : tzNow.year)
+const selMonth = ref(props.modelValue !== null ? dateToTzParts(new Date(props.modelValue), props.timezone).month : tzNow.month)
+const selDay = ref(props.modelValue !== null ? dateToTzParts(new Date(props.modelValue), props.timezone).day : tzNow.day)
+const selHour = ref(props.modelValue !== null ? dateToTzParts(new Date(props.modelValue), props.timezone).hour : tzNow.hour)
+const selMinute = ref(props.modelValue !== null ? dateToTzParts(new Date(props.modelValue), props.timezone).minute : tzNow.minute)
+const selSecond = ref(props.modelValue !== null ? dateToTzParts(new Date(props.modelValue), props.timezone).second : tzNow.second)
 
-if (props.modelValue) {
+if (props.modelValue !== null) {
   viewYear.value = selYear.value
   viewMonth.value = selMonth.value
 }
@@ -76,9 +76,9 @@ const todayParts = computed(() => dateToTzParts(new Date(), props.timezone))
 const calendarDays = computed(() => {
   const y = viewYear.value
   const m = viewMonth.value
-  const firstDay = new Date(y, m - 1, 1).getDay()
-  const daysInMonth = new Date(y, m, 0).getDate()
-  const daysInPrev = new Date(y, m - 1, 0).getDate()
+  const firstDay = new Date(Date.UTC(y, m - 1, 1)).getUTCDay()
+  const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate()
+  const daysInPrev = new Date(Date.UTC(y, m - 1, 0)).getUTCDate()
 
   const cells: { day: number; month: number; year: number; isOther: boolean }[] = []
 
@@ -240,7 +240,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
 // 时区变化时更新视图
 watch(() => props.timezone, () => {
   const n = dateToTzParts(new Date(), props.timezone)
-  if (!props.modelValue) {
+  if (props.modelValue === null) {
     selYear.value = n.year
     selMonth.value = n.month
     selDay.value = n.day
