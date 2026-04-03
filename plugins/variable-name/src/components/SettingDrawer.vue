@@ -9,12 +9,12 @@
       closable
     >
       <div class="help-link">
-        <n-a
-          href="https://fanyi-api.baidu.com/manage/developer"
-          target="_blank"
+        <n-gradient-text
+          class="help-link-link"
+          @click="clickOpenPlatform"
+          type="success"
+          >百度翻译开放平台</n-gradient-text
         >
-          百度翻译开放平台
-        </n-a>
       </div>
       <n-form
         :model="formData"
@@ -71,6 +71,8 @@
 <script setup>
 import { computed, watch } from 'vue';
 import { getConfig, saveConfig, sliderMarkers } from '@/utils/config';
+import { copyContent } from '@/utils/copy-content';
+import { useMessage } from 'naive-ui';
 
 const visible = defineModel({ default: false });
 
@@ -88,6 +90,12 @@ const formData = reactive({
   translateMode: 'realtime',
   delayTime: 500,
 });
+
+const message = useMessage();
+const clickOpenPlatform = () => {
+  copyContent('https://fanyi-api.baidu.com/manage/developer');
+  message.success('已复制百度翻译开放平台链接');
+};
 
 watch(visible, (val) => {
   if (val) {
@@ -137,5 +145,9 @@ watch(
   font-size: 14px;
   white-space: nowrap;
   margin-left: 4px;
+}
+
+.help-link-link {
+  cursor: pointer;
 }
 </style>

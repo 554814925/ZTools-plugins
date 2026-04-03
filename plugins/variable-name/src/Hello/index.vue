@@ -134,7 +134,6 @@ function cleanString(str) {
     .trim();
 }
 
-// 生成格式化后的字符串
 function generateFormats(str) {
   const cleaned = cleanString(str);
   return [
@@ -322,9 +321,26 @@ const handleCopy = (value) => {
   color: #333;
   font-family: 'SF Mono', Monaco, Consolas, monospace;
   width: calc(100% - 60px);
-  /* 超过部分省略号 */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+@media (prefers-color-scheme: dark) {
+  .result-item:hover {
+    background: #1a3a5c;
+  }
+
+  .result-item:active {
+    background: #0d2840;
+  }
+
+  .result-item .label {
+    color: #888;
+  }
+
+  .result-item .value {
+    color: #e0e0e0;
+  }
 }
 </style>
