@@ -4,9 +4,8 @@
       <n-input
         ref="inputRef"
         v-model:value="inputValue"
-        :placeholder="inputPlaceholder"
+        placeholder="输入翻译内容"
         size="large"
-        :disabled="inputDisabled"
         @keyup.enter="config?.translateMode === 'click' && handleClick()"
         clearable
       >
@@ -79,8 +78,6 @@ const inputValue = ref('');
 const loading = ref(false);
 const showResult = ref(false);
 const showDrawer = ref(false);
-const inputDisabled = ref(false);
-const inputPlaceholder = ref('输入翻译内容');
 const resultList = ref([]);
 const config = ref(null);
 let debounceTimer = null;
@@ -108,16 +105,19 @@ onMounted(() => {
 });
 
 watch(showDrawer, (val) => {
-  if (!val && hasValidConfig()) {
+  if (!val) {
     loadConfig();
-    inputDisabled.value = false;
-    inputPlaceholder.value = '输入翻译内容';
     focusInput();
   }
 });
 
 watch(inputValue, (val) => {
-  if (config.value?.translateMode === 'realtime' && val.trim() && hasValidConfig()) {
+  if (!val.trim()) {
+    resultList.value = [];
+    showResult.value = false;
+    return;
+  }
+  if (config.value?.translateMode === 'realtime') {
     if (debounceTimer) {
       clearTimeout(debounceTimer);
     }
@@ -134,7 +134,6 @@ function cleanString(str) {
     .trim();
 }
 
-// 生成格式化后的字符串
 function generateFormats(str) {
   const cleaned = cleanString(str);
   return [
@@ -198,7 +197,7 @@ const handleClick = async () => {
   }
 
   const currentConfig = getConfig();
-  if (!currentConfig) {
+  if (!currentConfig || !currentConfig.appId || !currentConfig.appKey) {
     message.warning('请先配置翻译服务');
     showDrawer.value = true;
     return;
@@ -228,9 +227,6 @@ const handleClick = async () => {
 
     const authErrorCodes = ['52001', '52003', '54000', '54001', '54003', '58000', '58002'];
     if (authErrorCodes.includes(json.error_code)) {
-      inputDisabled.value = true;
-      inputValue.value = '';
-      inputPlaceholder.value = '请配置百度翻译[APP ID]和[密钥]';
       showDrawer.value = true;
       return;
     }
@@ -250,15 +246,21 @@ const handleClick = async () => {
 };
 
 const handleCopy = (value) => {
-  copyContent(value);
-  message.success('已复制');
+  const currentConfig = config.value;
 
-  setTimeout(() => {
-    nextTick(() => {
-      window.ztools.outPlugin(true);
-      window.ztools.hideMainWindow();
-    });
-  }, 1);
+  if (currentConfig?.copyOnSelect) {
+    copyContent(value);
+    message.success('已复制');
+  }
+
+  if (currentConfig?.closeOnSelect) {
+    setTimeout(() => {
+      nextTick(() => {
+        window.ztools.outPlugin(true);
+        window.ztools.hideMainWindow();
+      });
+    }, 1);
+  }
 };
 </script>
 
@@ -322,9 +324,26 @@ const handleCopy = (value) => {
   color: #333;
   font-family: 'SF Mono', Monaco, Consolas, monospace;
   width: calc(100% - 60px);
-  /* 超过部分省略号 */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+@media (prefers-color-scheme: dark) {
+  .result-item:hover {
+    background: #1a3a5c;
+  }
+
+  .result-item:active {
+    background: #0d2840;
+  }
+
+  .result-item .label {
+    color: #888;
+  }
+
+  .result-item .value {
+    color: #e0e0e0;
+  }
 }
 </style>

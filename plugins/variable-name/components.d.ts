@@ -11,7 +11,6 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    NA: typeof import('naive-ui')['NA']
     NButton: typeof import('naive-ui')['NButton']
     NConfigProvider: typeof import('naive-ui')['NConfigProvider']
     NDivider: typeof import('naive-ui')['NDivider']
@@ -25,6 +24,7 @@ declare module 'vue' {
     NRadioButton: typeof import('naive-ui')['NRadioButton']
     NRadioGroup: typeof import('naive-ui')['NRadioGroup']
     NSlider: typeof import('naive-ui')['NSlider']
+    NSwitch: typeof import('naive-ui')['NSwitch']
     SettingDrawer: typeof import('./src/components/SettingDrawer.vue')['default']
   }
 }

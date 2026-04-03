@@ -23,3 +23,4 @@ unpackage/
 # 临时文件
 *.tmp
 *.temp
+dist/
