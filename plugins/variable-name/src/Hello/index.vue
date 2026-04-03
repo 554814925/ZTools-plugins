@@ -134,6 +134,7 @@ function cleanString(str) {
     .trim();
 }
 
+// 生成格式化后的字符串
 function generateFormats(str) {
   const cleaned = cleanString(str);
   return [
