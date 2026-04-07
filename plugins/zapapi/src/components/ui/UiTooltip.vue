@@ -1,0 +1,217 @@
+<template>
+  <div
+    ref="triggerRef"
+    class="ui-tooltip-trigger"
+    @mouseover="scheduleShow"
+    @mouseout="scheduleHide"
+    @focus="scheduleShow"
+    @blur="scheduleHide"
+  >
+    <slot />
+  </div>
+  <Teleport to="body">
+    <div
+      ref="tooltipRef"
+      class="ui-tooltip"
+      :class="[`ui-tooltip--${placement}`, { 'ui-tooltip--show': visible }]"
+      :style="tooltipStyle"
+      role="tooltip"
+    >
+      <slot name="content">{{ content }}</slot>
+      <div class="ui-tooltip__arrow" :class="`ui-tooltip__arrow--${placement}`" />
+    </div>
+  </Teleport>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+
+const props = withDefaults(defineProps<{
+  content?: string
+  placement?: 'top' | 'bottom' | 'left' | 'right'
+  showDelay?: number
+  hideDelay?: number
+}>(), {
+  content: '',
+  placement: 'top',
+  showDelay: 200,
+  hideDelay: 100
+})
+
+const triggerRef = ref<HTMLElement | null>(null)
+const visible = ref(false)
+const tooltipStyle = ref<Record<string, string>>({
+  position: 'fixed',
+  top: '0',
+  left: '0',
+  zIndex: '99998',
+  visibility: 'hidden'
+})
+
+let showTimer: ReturnType<typeof setTimeout> | null = null
+let hideTimer: ReturnType<typeof setTimeout> | null = null
+
+function positionTooltip() {
+  const trigger = triggerRef.value
+  if (!trigger) return
+
+  const rect = trigger.getBoundingClientRect()
+  if (rect.width === 0 || rect.height === 0) return
+
+  const gap = 8
+  let top = 0, left = 0, tx = '', ty = ''
+
+  switch (props.placement) {
+    case 'top':
+      top = rect.top - gap
+      left = rect.left + rect.width / 2
+      tx = '-50%'
+      ty = '-100%'
+      break
+    case 'bottom':
+      top = rect.bottom + gap
+      left = rect.left + rect.width / 2
+      tx = '-50%'
+      ty = '0'
+      break
+    case 'left':
+      top = rect.top + rect.height / 2
+      left = rect.left - gap
+      tx = '-100%'
+      ty = '-50%'
+      break
+    case 'right':
+      top = rect.top + rect.height / 2
+      left = rect.right + gap
+      tx = '0'
+      ty = '-50%'
+      break
+  }
+
+  tooltipStyle.value = {
+    position: 'fixed',
+    top: `${top}px`,
+    left: `${left}px`,
+    transform: `translate(${tx}, ${ty})`,
+    zIndex: '99998',
+    visibility: 'visible'
+  }
+}
+
+function scheduleShow() {
+  if (hideTimer) { clearTimeout(hideTimer); hideTimer = null }
+  if (showTimer) return
+  showTimer = setTimeout(() => {
+    visible.value = true
+    showTimer = null
+    requestAnimationFrame(() => {
+      positionTooltip()
+    })
+  }, props.showDelay)
+}
+
+function scheduleHide() {
+  if (showTimer) { clearTimeout(showTimer); showTimer = null }
+  if (hideTimer) return
+  hideTimer = setTimeout(() => {
+    visible.value = false
+    hideTimer = null
+  }, props.hideDelay)
+}
+
+watch(visible, (val) => {
+  if (val) {
+    requestAnimationFrame(() => {
+      positionTooltip()
+    })
+  }
+})
+
+onMounted(() => {
+  window.addEventListener('scroll', updatePosition, true)
+  window.addEventListener('resize', updatePosition)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', updatePosition, true)
+  window.removeEventListener('resize', updatePosition)
+  if (showTimer) clearTimeout(showTimer)
+  if (hideTimer) clearTimeout(hideTimer)
+})
+
+function updatePosition() {
+  if (!visible.value) return
+  positionTooltip()
+}
+</script>
+
+<style scoped>
+.ui-tooltip-trigger {
+  display: inline-flex;
+  position: relative;
+}
+</style>
+
+<style>
+.ui-tooltip {
+  padding: 5px 10px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  max-width: 220px;
+  white-space: normal;
+  word-break: break-word;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.ui-tooltip--show {
+  opacity: 1;
+}
+
+.ui-tooltip__arrow {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+}
+
+.ui-tooltip__arrow--top {
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  border-left: none;
+  border-top: none;
+}
+
+.ui-tooltip__arrow--bottom {
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  border-right: none;
+  border-bottom: none;
+}
+
+.ui-tooltip__arrow--left {
+  right: -5px;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+  border-left: none;
+  border-bottom: none;
+}
+
+.ui-tooltip__arrow--right {
+  left: -5px;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+  border-right: none;
+  border-top: none;
+}
+</style>

@@ -1,0 +1,142 @@
+import { reactive, watch } from 'vue'
+
+const STORAGE_KEY = 'zapapi_collections'
+
+export interface CollectionRequest {
+  id: string
+  name: string
+  method: string
+  url: string
+  params: Array<{ key: string; value: string; enabled: boolean }>
+  headers: Array<{ key: string; value: string; enabled: boolean }>
+  auth: {
+    type: 'none' | 'bearer' | 'basic' | 'apikey'
+    token?: string
+    username?: string
+    password?: string
+    apiKey?: string
+    apiKeyLocation?: 'header' | 'query'
+    apiKeyHeader?: string
+  }
+  body: {
+    type: 'none' | 'json' | 'formdata' | 'urlencoded' | 'raw'
+    raw?: string
+    formData?: Array<{ key: string; value: string; enabled: boolean; isFile: boolean }>
+  }
+}
+
+export interface Collection {
+  id: string
+  name: string
+  auth: {
+    type: 'none' | 'bearer' | 'basic' | 'apikey'
+    token?: string
+    username?: string
+    password?: string
+    apiKey?: string
+    apiKeyLocation?: 'header' | 'query'
+    apiKeyHeader?: string
+  }
+  requests: CollectionRequest[]
+}
+
+function generateId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2)
+}
+
+function loadFromStorage(): Collection[] {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY)
+    return data ? JSON.parse(data) : []
+  } catch {
+    return []
+  }
+}
+
+function saveToStorage(collections: Collection[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(collections))
+}
+
+const state = reactive({
+  collections: loadFromStorage() as Collection[]
+})
+
+watch(
+  () => state.collections,
+  (val) => saveToStorage(val),
+  { deep: true }
+)
+
+export function useCollectionsStore() {
+  function createCollection(name: string): Collection {
+    const collection: Collection = {
+      id: generateId(),
+      name,
+      auth: { type: 'none' },
+      requests: []
+    }
+    state.collections.push(collection)
+    return collection
+  }
+
+  function updateCollection(id: string, data: Partial<Collection>) {
+    const index = state.collections.findIndex((c) => c.id === id)
+    if (index !== -1) {
+      state.collections[index] = { ...state.collections[index], ...data }
+    }
+  }
+
+  function deleteCollection(id: string) {
+    state.collections = state.collections.filter((c) => c.id !== id)
+  }
+
+  function addRequest(collectionId: string, request: Omit<CollectionRequest, 'id'>): CollectionRequest {
+    const collection = state.collections.find((c) => c.id === collectionId)
+    if (collection) {
+      const newRequest: CollectionRequest = { ...request, id: generateId() }
+      collection.requests.push(newRequest)
+      return newRequest
+    }
+    throw new Error('Collection not found')
+  }
+
+  function updateRequest(collectionId: string, requestId: string, data: Partial<CollectionRequest>) {
+    const collection = state.collections.find((c) => c.id === collectionId)
+    if (collection) {
+      const request = collection.requests.find((r) => r.id === requestId)
+      if (request) {
+        Object.assign(request, data)
+      }
+    }
+  }
+
+  function deleteRequest(collectionId: string, requestId: string) {
+    const collection = state.collections.find((c) => c.id === collectionId)
+    if (collection) {
+      collection.requests = collection.requests.filter((r) => r.id !== requestId)
+    }
+  }
+
+  function exportCollections(): string {
+    return JSON.stringify(state.collections, null, 2)
+  }
+
+  function importCollections(json: string) {
+    const data = JSON.parse(json)
+    if (Array.isArray(data)) {
+      state.collections = data
+    }
+  }
+
+  return {
+    state,
+    createCollection,
+    updateCollection,
+    deleteCollection,
+    addRequest,
+    updateRequest,
+    deleteRequest,
+    exportCollections,
+    importCollections
+  }
+}
