@@ -17,6 +17,8 @@ import { useNodeStore } from './stores/node';
 import { useGitStore } from './stores/git';
 import type { Project } from './types';
 import { normalizeNvmVersion, findInstalledNodeVersion } from './utils/nvm';
+import { DEFAULT_NETWORK_TIMEOUT_MS, fetchWithTimeout, isAbortError } from './utils/network';
+import { ensureNodeInstallCommand } from './utils/projectCommands';
 
 const target = import.meta.env.VITE_TARGET;
 const isPlugin = target === 'utools' || target === 'ztools';
@@ -105,12 +107,16 @@ async function handleImportProject(path: string) {
       id: crypto.randomUUID(),
       name: info.name || path.split(/[\\/]/).pop() || 'Untitled',
       path: path,
-      type: 'node',
-      nodeVersion,
-      packageManager: info.packageManager || 'npm',
-      scripts: info.scripts
+      type: info.projectType === 'node' ? 'node' : 'other',
     };
-    store.addProject(project);
+
+    if (info.projectType === 'node') {
+      project.nodeVersion = nodeVersion;
+      project.packageManager = info.packageManager || 'npm';
+      project.scripts = info.scripts;
+    }
+
+    store.addProject(ensureNodeInstallCommand(project, t('project.installDependencies')));
     ElMessage.success(t('dashboard.addProject') + ' Success');
   } catch (e) {
     ElMessage.error('Failed to import: ' + e);
@@ -144,7 +150,11 @@ function dispatchManualUpdateResult(detail: ManualUpdateResult) {
 async function checkUpdate(manual = false) {
   try {
     // Use /releases list instead of /releases/latest to avoid missing pre-release tagged versions
-    const response = await fetch('https://api.github.com/repos/cuteyuchen/project-manager/releases?per_page=10');
+    const response = await fetchWithTimeout(
+      'https://api.github.com/repos/cuteyuchen/project-manager/releases?per_page=10',
+      {},
+      { timeoutMs: DEFAULT_NETWORK_TIMEOUT_MS },
+    );
     if (!response.ok) {
       if (manual) {
         dispatchManualUpdateResult({
@@ -258,7 +268,7 @@ async function checkUpdate(manual = false) {
     if (manual) {
       dispatchManualUpdateResult({
         status: 'error',
-        error: String(e)
+        error: isAbortError(e) ? t('common.requestTimeout') : String(e),
       });
     }
   }

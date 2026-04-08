@@ -449,6 +449,71 @@ window.services = {
         }
     },
 
+    gitListRemoteBranches: async (url) => {
+        return new Promise((resolve, reject) => {
+            execFile('git', ['ls-remote', '--heads', '--', url], { windowsHide: true, maxBuffer: 10 * 1024 * 1024, env: { ...process.env, GIT_TERMINAL_PROMPT: '0' } }, (error, stdout, stderr) => {
+                if (error) {
+                    reject(new Error(stderr || error.message));
+                    return;
+                }
+
+                const branches = stdout
+                    .split(/\r?\n/)
+                    .map((line) => line.trim().split(/\s+/)[1] || '')
+                    .filter((ref) => ref.startsWith('refs/heads/'))
+                    .map((ref) => ref.replace(/^refs\/heads\//, ''))
+                    .filter(Boolean)
+                    .sort();
+
+                resolve([...new Set(branches)]);
+            });
+        });
+    },
+
+    gitCloneBranch: async (url, branch, destination, operationId) => {
+        return new Promise((resolve, reject) => {
+            try {
+                if (fs.existsSync(destination)) {
+                    const entries = fs.readdirSync(destination);
+                    if (entries.length > 0) {
+                        reject(new Error('Destination directory must be empty'));
+                        return;
+                    }
+                }
+            } catch (error) {
+                reject(error);
+                return;
+            }
+
+            const child = execFile(
+                'git',
+                ['clone', '--branch', branch, '--single-branch', '--', url, destination],
+                { windowsHide: true, maxBuffer: 10 * 1024 * 1024, env: { ...process.env, GIT_TERMINAL_PROMPT: '0' } },
+                (error, stdout, stderr) => {
+                    if (operationId) processes.delete(operationId);
+                    if (error) {
+                        reject(new Error(stderr || error.message));
+                        return;
+                    }
+
+                    resolve(`${stdout}${stderr}`.trim());
+                }
+            );
+
+            if (operationId) {
+                processes.set(operationId, child);
+            }
+        });
+    },
+
+    gitCancelOperation: async (operationId) => {
+        const child = processes.get(operationId);
+        if (child) {
+            terminateProcessTree(child);
+            processes.delete(operationId);
+        }
+    },
+
     runProjectCommand: async (id, projectPath, script, packageManager, nodePath) => {
         if (processes.has(id)) throw new Error('Already running');
 
@@ -764,7 +829,7 @@ window.services = {
     },
     
     getAppVersion: async () => {
-        return "1.0.5";
+        return "1.0.8";
     },
     
     installUpdate: async (url) => {
@@ -1010,24 +1075,29 @@ window.services = {
         });
     },
 
-    gitPull: async (projectPath, remote, branch) => {
+    gitPull: async (projectPath, remote, branch, operationId) => {
         const args = ['pull'];
         if (remote) args.push(remote);
         if (branch) args.push(branch);
         return new Promise((resolve, reject) => {
             const child = spawn('git', args, { cwd: projectPath, windowsHide: true });
+            if (operationId) processes.set(operationId, child);
             let stdout = '', stderr = '';
             child.stdout.on('data', (d) => stdout += d);
             child.stderr.on('data', (d) => stderr += d);
             child.on('close', (code) => {
+                if (operationId) processes.delete(operationId);
                 if (code === 0) resolve(stdout + stderr);
                 else reject(new Error(stderr || stdout));
             });
-            child.on('error', reject);
+            child.on('error', (error) => {
+                if (operationId) processes.delete(operationId);
+                reject(error);
+            });
         });
     },
 
-    gitPush: async (projectPath, remote, branch, force, setUpstream) => {
+    gitPush: async (projectPath, remote, branch, force, setUpstream, operationId) => {
         const args = ['push'];
         if (force) args.push('--force');
         if (setUpstream) args.push('-u');
@@ -1035,31 +1105,41 @@ window.services = {
         if (branch) args.push(branch);
         return new Promise((resolve, reject) => {
             const child = spawn('git', args, { cwd: projectPath, windowsHide: true });
+            if (operationId) processes.set(operationId, child);
             let stdout = '', stderr = '';
             child.stdout.on('data', (d) => stdout += d);
             child.stderr.on('data', (d) => stderr += d);
             child.on('close', (code) => {
+                if (operationId) processes.delete(operationId);
                 if (code === 0) resolve(stdout + stderr);
                 else reject(new Error(stderr || stdout));
             });
-            child.on('error', reject);
+            child.on('error', (error) => {
+                if (operationId) processes.delete(operationId);
+                reject(error);
+            });
         });
     },
 
-    gitFetch: async (projectPath, remote) => {
+    gitFetch: async (projectPath, remote, operationId) => {
         const args = ['fetch'];
         if (remote) args.push(remote);
         else args.push('--all');
         return new Promise((resolve, reject) => {
             const child = spawn('git', args, { cwd: projectPath, windowsHide: true });
+            if (operationId) processes.set(operationId, child);
             let stdout = '', stderr = '';
             child.stdout.on('data', (d) => stdout += d);
             child.stderr.on('data', (d) => stderr += d);
             child.on('close', (code) => {
+                if (operationId) processes.delete(operationId);
                 if (code === 0) resolve(stdout + stderr);
                 else reject(new Error(stderr || stdout));
             });
-            child.on('error', reject);
+            child.on('error', (error) => {
+                if (operationId) processes.delete(operationId);
+                reject(error);
+            });
         });
     },
 
