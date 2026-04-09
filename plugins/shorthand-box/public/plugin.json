@@ -4,7 +4,7 @@
   "title": "速记盒",
   "description": "一个用于速记数据的插件",
   "author": "Jeffrey",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "index.html",
   "preload": "preload/services.js",
   "logo": "logo.png",
