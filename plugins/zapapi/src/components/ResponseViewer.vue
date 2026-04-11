@@ -279,6 +279,10 @@ function downloadImage() {
 const sourceBodyText = computed(() => props.response.body || props.response.raw || '')
 
 const displayBodyText = computed(() => {
+  if (props.response.isBinary) {
+    return props.response.base64Body || ''
+  }
+
   const text = sourceBodyText.value
   if (!text) {
     return ''
@@ -374,16 +378,21 @@ function escapeHtml(str: string): string {
 }
 
 async function copyText(value: string): Promise<void> {
+  let copyValue = value
+  if (props.response.isBinary && props.response.base64Body) {
+    copyValue = props.response.base64Body
+  }
   try {
-    await navigator.clipboard.writeText(value)
+    await navigator.clipboard.writeText(copyValue)
   } catch {
     const textarea = document.createElement('textarea')
-    textarea.value = value
+    textarea.value = copyValue
     document.body.appendChild(textarea)
     textarea.select()
     document.execCommand('copy')
     document.body.removeChild(textarea)
   }
+  ;(window as any).__toast?.success(t('common.copied'))
 }
 
 function addCookiesToJar() {

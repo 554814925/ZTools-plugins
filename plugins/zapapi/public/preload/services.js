@@ -13,7 +13,7 @@ function getUserDataDir() {
       if (dir) {
         return dir
       }
-    } catch {}
+    } catch { }
   }
 
   try {
@@ -48,7 +48,7 @@ function saveCookieState(state) {
   try {
     const filePath = getCookieStorePath()
     fs.writeFileSync(filePath, JSON.stringify(state), { encoding: 'utf-8' })
-  } catch {}
+  } catch { }
 }
 
 const cookieState = loadCookieState()
@@ -366,8 +366,20 @@ function collectRawHeaders(incoming) {
   return fallback
 }
 
+let isPageDisposed = false
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    isPageDisposed = true
+  })
+}
+
 function executeHttpRequest(payload, redirectCount) {
   return new Promise((resolve, reject) => {
+    if (isPageDisposed) {
+      reject(new Error('Request canceled'))
+      return
+    }
+
     let urlObj
     try {
       urlObj = new URL(payload.url)
@@ -407,14 +419,23 @@ function executeHttpRequest(payload, redirectCount) {
     }
 
     const startedAt = Date.now()
+    let isRequestAborted = false
     const req = client.request(requestOptions, (res) => {
+      if (isRequestAborted || isPageDisposed) {
+        res.destroy()
+        reject(new Error('Request canceled'))
+        return
+      }
+
       const chunks = []
 
       res.on('data', (chunk) => {
+        if (isPageDisposed) return
         chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
       })
 
       res.on('end', async () => {
+        if (isPageDisposed) return
         const elapsed = Date.now() - startedAt
         const headersRaw = collectRawHeaders(res)
         const status = Number(res.statusCode || 0)
@@ -468,10 +489,12 @@ function executeHttpRequest(payload, redirectCount) {
     })
 
     req.on('error', (error) => {
+      if (isPageDisposed) return
       reject(error)
     })
 
     req.setTimeout(timeoutMs, () => {
+      isRequestAborted = true
       req.destroy(new Error(`Request timeout (${timeoutMs}ms)`))
     })
 
@@ -479,8 +502,9 @@ function executeHttpRequest(payload, redirectCount) {
       try {
         req.write(Buffer.from(payload.bodyBase64, 'base64'))
       } catch {
-        reject(new Error('Invalid base64 request body'))
+        isRequestAborted = true
         req.destroy()
+        reject(new Error('Invalid base64 request body'))
         return
       }
     }

@@ -227,6 +227,7 @@ export default {
     copyKey: '复制键名',
     copyPath: '复制路径',
     copyValue: '复制值',
+    copied: '已复制!',
     toggleNode: '展开或折叠节点',
     binaryDetected: '检测到二进制响应',
     imagePreview: '图片预览',

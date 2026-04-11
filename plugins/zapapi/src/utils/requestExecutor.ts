@@ -315,7 +315,7 @@ async function executePreloadRequest(
   if (!window.services?.sendHttpRequest) {
     const start = performance.now()
     const controller = new AbortController()
-    
+
     if (signal) {
       signal.addEventListener('abort', () => controller.abort(signal.reason))
       if (signal.aborted) {
@@ -339,9 +339,9 @@ async function executePreloadRequest(
       }
 
       let fetchUrl = url
-      const isLocalhost = typeof window !== 'undefined' && 
+      const isLocalhost = typeof window !== 'undefined' &&
         (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-      
+
       if (isLocalhost) {
         fetchUrl = '/__cors_proxy'
         // cast headers generic to Record to safely apply our custom header
