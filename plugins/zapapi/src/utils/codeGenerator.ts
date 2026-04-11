@@ -53,9 +53,15 @@ function resolveBodyKind(req: RequestState): 'none' | 'text' | 'structured' | 'b
   if (req.body.kind) {
     return req.body.kind
   }
-  if (req.body.type === 'none') return 'none'
-  if (req.body.type === 'urlencoded' || req.body.type === 'formdata') return 'structured'
-  if (req.body.type === 'json') return 'text'
+  if (req.body.type === 'none') {
+    return 'none'
+  }
+  if (req.body.type === 'urlencoded' || req.body.type === 'formdata') {
+    return 'structured'
+  }
+  if (req.body.type === 'json') {
+    return 'text'
+  }
   return 'other'
 }
 
@@ -63,9 +69,15 @@ function resolveBodyContentType(req: RequestState): string {
   if (req.body.contentType) {
     return req.body.contentType
   }
-  if (req.body.type === 'json') return 'application/json'
-  if (req.body.type === 'urlencoded') return 'application/x-www-form-urlencoded'
-  if (req.body.type === 'formdata') return 'multipart/form-data'
+  if (req.body.type === 'json') {
+    return 'application/json'
+  }
+  if (req.body.type === 'urlencoded') {
+    return 'application/x-www-form-urlencoded'
+  }
+  if (req.body.type === 'formdata') {
+    return 'multipart/form-data'
+  }
   return ''
 }
 

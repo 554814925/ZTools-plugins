@@ -62,3 +62,8 @@ temp/
 
 # pnpm lock file
 pnpm-lock.yaml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class

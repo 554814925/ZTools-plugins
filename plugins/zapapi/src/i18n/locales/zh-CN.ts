@@ -339,7 +339,17 @@ export default {
     empty: 'Cookie Jar 为空',
     session: '会话',
     copy: '复制',
-    copied: '已复制!'
+    copied: '已复制!',
+    add: '添加 Cookie',
+    addTitle: '添加 Cookie',
+    name: '名称',
+    namePlaceholder: 'cookie_name',
+    value: '值',
+    valuePlaceholder: 'cookie_value',
+    domain: '域名',
+    domainPlaceholder: 'example.com',
+    path: '路径',
+    sameSite: 'SameSite'
   },
 
   shortcuts: {

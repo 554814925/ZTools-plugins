@@ -1,7 +1,8 @@
 <template>
   <div class="ui-empty">
-    <svg class="ui-empty__icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+    <svg class="ui-empty__icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1">
+      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
     </svg>
     <p class="ui-empty__text">{{ text }}</p>
     <div v-if="$slots.action" class="ui-empty__action">
@@ -32,6 +33,8 @@ const text = computed(() => props.text || t('empty.noData'))
   gap: var(--space-md);
   padding: var(--space-2xl) var(--space-lg);
   color: var(--text-muted);
+  width: 100%;
+  height: 100%;
 }
 
 .ui-empty__icon {

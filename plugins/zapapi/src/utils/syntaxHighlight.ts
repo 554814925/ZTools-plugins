@@ -1,3 +1,15 @@
+import hljs from 'highlight.js/lib/core'
+import json from 'highlight.js/lib/languages/json'
+import xml from 'highlight.js/lib/languages/xml'
+import javascript from 'highlight.js/lib/languages/javascript'
+import plaintext from 'highlight.js/lib/languages/plaintext'
+
+hljs.registerLanguage('json', json)
+hljs.registerLanguage('xml', xml)
+hljs.registerLanguage('html', xml) // xml handles HTML as well in highlight.js
+hljs.registerLanguage('javascript', javascript)
+hljs.registerLanguage('plaintext', plaintext)
+
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, '&amp;')
@@ -21,42 +33,6 @@ function decodeHtmlEntities(str: string): string {
   return output
 }
 
-function normalizeMarkupBody(body: string): string {
-  const trimmed = body.trim()
-  const hasEscapedTags = /&lt;\/?[\w!]/.test(trimmed)
-  const hasRawTags = /<\/?[\w!]/.test(trimmed)
-  if (hasEscapedTags && !hasRawTags) {
-    return decodeHtmlEntities(body)
-  }
-  return body
-}
-
-function c(str: string, color: string): string {
-  return `<span style="color:${color}">${escapeHtml(str)}</span>`
-}
-
-function cEscaped(str: string, color: string): string {
-  return `<span style="color:${color}">${str}</span>`
-}
-
-function highlightJson(json: string): string {
-  return json.replace(
-    /("(?:[^"\\]|\\.)*")(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?|[{}\[\],]/g,
-    (m, str, colon) => {
-      if (str) {
-        if (colon) {
-          return c(str, 'var(--accent-primary)') + c(colon, 'var(--text-muted)')
-        }
-        return c(str, 'var(--success-color)')
-      }
-      if (/true|false/.test(m)) return c(m, '#a78bfa')
-      if (/null/.test(m)) return c(m, '#f472b6')
-      if (/[{}\[\],]/.test(m)) return c(m, 'var(--text-muted)')
-      return c(m, 'var(--warning-color)')
-    }
-  )
-}
-
 function isValidJson(text: string): boolean {
   const trimmed = text.trim()
   if (!trimmed) {
@@ -68,41 +44,6 @@ function isValidJson(text: string): boolean {
   } catch {
     return false
   }
-}
-
-function highlightHtml(html: string): string {
-  const e = escapeHtml(html)
-  return e.replace(
-    /(&lt;!--[\s\S]*?--&gt;)|(&lt;\/?)([\w!][\w\-]*)((?:\s+[\w\-]+(?:\s*=\s*(?:&quot;[^&]*?&quot;|[^\s&]+))?)*)\s*(\/?&gt;)/g,
-    (_m, comment, open, tag, attrs, close) => {
-      if (comment) return cEscaped(comment, 'var(--text-muted)')
-      let r = cEscaped(open, 'var(--text-muted)')
-      r += cEscaped(tag, 'var(--accent-primary)')
-      if (attrs) {
-        r += attrs.replace(
-          /(\s+)([\w\-]+)(\s*=\s*)?(&quot;[^&]*?&quot;|[^\s&]+)?/g,
-          (_a, space, name, eq, val) => {
-            let s = space + cEscaped(name, 'var(--warning-color)')
-            if (eq) s += cEscaped(eq, 'var(--text-muted)')
-            if (val) s += cEscaped(val, 'var(--success-color)')
-            return s
-          }
-        )
-      }
-      r += cEscaped(close, 'var(--text-muted)')
-      return r
-    }
-  )
-}
-
-function highlightJavaScript(code: string): string {
-  const escaped = escapeHtml(code)
-  return escaped
-    .replace(/\b(const|let|var|function|return|if|else|for|while|switch|case|break|continue|try|catch|finally|async|await|new|class|extends|import|from|export|default|throw|typeof|instanceof|in|of|this)\b/g, '<span style="color:var(--accent-primary)">$1</span>')
-    .replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)/g, '<span style="color:var(--success-color)">$1</span>')
-    .replace(/\b(true|false|null|undefined)\b/g, '<span style="color:#a78bfa">$1</span>')
-    .replace(/\b\d+(?:\.\d+)?\b/g, '<span style="color:var(--warning-color)">$&</span>')
-    .replace(/(\/\/.*$)/gm, '<span style="color:var(--text-muted)">$1</span>')
 }
 
 function detectLang(body: string, contentType?: string): 'json' | 'html' | 'xml' | 'javascript' | 'text' {
@@ -127,12 +68,31 @@ export type HighlightMode = 'auto' | 'json' | 'xml' | 'html' | 'javascript' | 't
 export function highlight(body: string, contentType?: string, mode: HighlightMode = 'auto'): string {
   if (!body) return ''
   const lang = mode === 'auto' ? detectLang(body, contentType) : mode
-  switch (lang) {
-    case 'json':
-      return isValidJson(body) ? highlightJson(body) : escapeHtml(body)
-    case 'html':
-    case 'xml': return highlightHtml(normalizeMarkupBody(body))
-    case 'javascript': return highlightJavaScript(body)
-    default: return escapeHtml(body)
+
+  if (lang === 'text') {
+    return escapeHtml(body)
+  }
+
+  let contentToHighlight = body
+  if (lang === 'html' || lang === 'xml') {
+    const trimmed = body.trim()
+    const hasEscapedTags = /&lt;\/?[\w!]/.test(trimmed)
+    const hasRawTags = /<\/?[\w!]/.test(trimmed)
+    if (hasEscapedTags && !hasRawTags) {
+      contentToHighlight = decodeHtmlEntities(body)
+    }
+  }
+
+  if (lang === 'json' && !isValidJson(contentToHighlight)) {
+    return escapeHtml(contentToHighlight)
+  }
+
+  try {
+    const hljsLang = lang === 'html' ? 'xml' : lang
+    const result = hljs.highlight(contentToHighlight, { language: hljsLang })
+    return result.value
+  } catch {
+    return escapeHtml(contentToHighlight)
   }
 }
+

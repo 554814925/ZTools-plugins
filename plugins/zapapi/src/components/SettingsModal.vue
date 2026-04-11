@@ -601,12 +601,14 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-sm);
   background: var(--bg-surface);
   cursor: default;
+  transition: all 0.2s ease;
 }
 
 .tech-card__icon {
-  width: 22px;
-  height: 22px;
-  color: var(--text-muted);
+  width: 24px;
+  height: 24px;
+  color: var(--tech-color);
+  transition: transform 0.2s ease;
 }
 
 .tech-card__label {
@@ -614,11 +616,17 @@ onBeforeUnmount(() => {
   font-weight: 500;
   color: var(--text-secondary);
   text-align: center;
+  transition: color 0.2s ease;
 }
 
 .tech-card:hover {
   border-color: var(--tech-color);
   background: var(--bg-elevated);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--tech-color) 20%, transparent);
+}
+
+.tech-card:hover .tech-card__icon {
+  transform: scale(1.1);
 }
 
 .tech-card:hover .tech-card__label {

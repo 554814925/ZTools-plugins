@@ -1,3 +1,10 @@
+function generateRandomUuid(): string {
+  if (typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return Date.now().toString(36) + Math.random().toString(36).substring(2)
+}
+
 export function resolveVariables(
   text: string,
   variables: Record<string, string>,
@@ -8,14 +15,10 @@ export function resolveVariables(
   }
 
   const allVars = { ...collectionVariables, ...variables }
-  let randomUuid = Date.now().toString(36) + Math.random().toString(36).substring(2)
-  if (typeof crypto.randomUUID === 'function') {
-    randomUuid = crypto.randomUUID()
-  }
 
   const builtInVars: Record<string, string> = {
     $timestamp: Date.now().toString(),
-    $randomUUID: randomUuid,
+    $randomUUID: generateRandomUuid(),
     $isoTimestamp: new Date().toISOString()
   }
 

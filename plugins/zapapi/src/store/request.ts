@@ -144,6 +144,17 @@ function cloneState<T>(state: T): T {
   return JSON.parse(JSON.stringify(state)) as T
 }
 
+function isTextContentType(contentType: string): boolean {
+  const textTypes = [
+    'application/xml',
+    'text/xml',
+    'application/ld+json',
+    'application/hal+json',
+    'application/vnd.api+json'
+  ]
+  return textTypes.includes(contentType)
+}
+
 function inferBodyFromLegacy(
   body: Partial<RequestBodyState> | undefined
 ): Pick<RequestBodyState, 'type' | 'kind' | 'contentType'> {
@@ -159,8 +170,8 @@ function inferBodyFromLegacy(
 
   if (legacyType === 'raw') {
     const guessed = body?.contentType || 'text/plain'
-    const isText = guessed === 'application/xml' || guessed === 'text/xml' || guessed === 'application/ld+json' || guessed === 'application/hal+json' || guessed === 'application/vnd.api+json'
-    const kind: BodyKind = guessed === 'application/octet-stream' ? 'binary' : (isText ? 'text' : 'other')
+    const isBinary = guessed === 'application/octet-stream'
+    const kind: BodyKind = isBinary ? 'binary' : (isTextContentType(guessed) ? 'text' : 'other')
     return {
       type: 'raw',
       kind,
@@ -192,7 +203,9 @@ function inferBodyFromLegacy(
 }
 
 function inferLegacyTypeFromUnified(kind: BodyKind, contentType: string): LegacyBodyType {
-  if (kind === 'none') return 'none'
+  if (kind === 'none') {
+    return 'none'
+  }
   if (kind === 'structured') {
     return contentType === 'multipart/form-data' ? 'formdata' : 'urlencoded'
   }

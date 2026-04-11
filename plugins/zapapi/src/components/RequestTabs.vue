@@ -168,13 +168,6 @@ function openContextMenuAt(x: number, y: number, tabId: string) {
 
 function onTabClick(event: MouseEvent, tabId: string) {
   emit('select', tabId)
-  const current = event.currentTarget as HTMLElement | null
-  if (!current) {
-    openContextMenuAt(event.clientX, event.clientY, tabId)
-    return
-  }
-  const rect = current.getBoundingClientRect()
-  openContextMenuAt(rect.left + 8, rect.bottom + 6, tabId)
 }
 
 function openContextMenu(event: MouseEvent, tabId: string) {

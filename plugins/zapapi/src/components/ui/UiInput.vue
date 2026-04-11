@@ -11,10 +11,10 @@
       :placeholder="placeholder"
       :disabled="disabled"
       :readonly="readonly"
-      @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+      @input="handleInput"
       @focus="isFocused = true"
       @blur="isFocused = false"
-      @keydown="$emit('keydown', $event)"
+      @keydown="handleKeydown"
     />
     <div v-if="$slots.suffix || suffix" class="ui-input__suffix">
       <slot name="suffix">{{ suffix }}</slot>
@@ -25,7 +25,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   modelValue?: string
   type?: string
   placeholder?: string
@@ -36,7 +36,9 @@ withDefaults(defineProps<{
 }>(), {
   modelValue: '',
   type: 'text',
-  placeholder: ''
+  placeholder: '',
+  disabled: false,
+  readonly: false
 })
 
 const emit = defineEmits<{
@@ -47,13 +49,32 @@ const emit = defineEmits<{
 const inputRef = ref<HTMLInputElement | null>(null)
 const isFocused = ref(false)
 
+function handleInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  emit('update:modelValue', target.value)
+}
+
+function handleKeydown(event: KeyboardEvent) {
+  emit('keydown', event)
+}
+
+function focus() {
+  inputRef.value?.focus()
+}
+
+function select() {
+  inputRef.value?.select()
+}
+
+function focusAndSelect() {
+  inputRef.value?.focus()
+  inputRef.value?.select()
+}
+
 defineExpose({
-  focus: () => inputRef.value?.focus(),
-  select: () => inputRef.value?.select(),
-  focusAndSelect: () => {
-    inputRef.value?.focus()
-    inputRef.value?.select()
-  }
+  focus,
+  select,
+  focusAndSelect
 })
 </script>
 

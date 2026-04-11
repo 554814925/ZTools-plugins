@@ -392,7 +392,7 @@ async function copyText(value: string): Promise<void> {
     document.execCommand('copy')
     document.body.removeChild(textarea)
   }
-  ;(window as any).__toast?.success(t('common.copied'))
+  ; (window as any).__toast?.success(t('common.copied'))
 }
 
 function addCookiesToJar() {

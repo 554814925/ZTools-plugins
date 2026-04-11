@@ -1,46 +1,34 @@
 <template>
   <div class="activity-bar" data-tour-id="activity-bar">
     <div class="activity-bar__top">
-      <UiTooltip v-for="item in topItems" :key="item.id" :content="item.label" placement="right">
+      <UiTooltip
+        v-for="item in topItems"
+        :key="item.id"
+        :content="item.label"
+        placement="right"
+      >
         <button
           class="activity-bar__item"
-          :class="{ 'activity-bar__item--active': activePanel === item.id && !collapsed }"
+          :class="{ 'activity-bar__item--active': isActive(item.id) }"
           @click="onItemClick(item.id)"
         >
-          <svg v-if="item.id === 'collections'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
-          </svg>
-          <svg v-else-if="item.id === 'history'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-          </svg>
-          <svg v-else-if="item.id === 'environments'" data-tour-id="env-selector" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
-          </svg>
-          <svg v-else-if="item.id === 'cookies'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 3a9 9 0 1 0 9 9c0-.4 0-.8-.1-1.2A3.8 3.8 0 0 1 17 7a4 4 0 0 1-3.9-3.4C12.7 3.2 12.3 3 12 3z"/>
-            <circle cx="8.5" cy="11" r="1"/><circle cx="12" cy="14" r="1"/><circle cx="15.5" cy="10" r="1"/>
-          </svg>
+          <component :is="getIconComponent(item.id)" />
           <span
             v-if="item.id === 'environments' && activeEnvName"
             class="activity-bar__badge"
-          >{{ activeEnvName.charAt(0) }}</span>
+          >{{ getEnvBadgeText(activeEnvName) }}</span>
         </button>
       </UiTooltip>
     </div>
     <div class="activity-bar__bottom">
       <UiTooltip :content="t('shortcuts.title')" placement="right">
-        <button class="activity-bar__item" data-tour-id="shortcuts-entry" @click="$emit('open-shortcuts')">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-          </svg>
+        <button class="activity-bar__item" data-tour-id="shortcuts-entry" @click="emitOpenShortcuts">
+          <ShortcutsIcon />
         </button>
       </UiTooltip>
       <UiTooltip :content="t('common.settings')" placement="right">
-        <button class="activity-bar__item" data-tour-id="settings-entry" @click="$emit('open-settings')">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/>
-            <circle cx="12" cy="12" r="3"/>
-          </svg>
+        <button class="activity-bar__item" data-tour-id="settings-entry" @click="emitOpenSettings">
+          <SettingsIcon />
         </button>
       </UiTooltip>
     </div>
@@ -48,11 +36,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, markRaw, h } from 'vue'
 import { useI18n } from 'vue-i18n'
 import UiTooltip from './ui/UiTooltip.vue'
 
 export type PanelId = 'collections' | 'history' | 'environments' | 'cookies'
+
+interface PanelItem {
+  id: PanelId
+  label: string
+}
 
 const { t } = useI18n()
 
@@ -68,16 +61,74 @@ const emit = defineEmits<{
   'open-shortcuts': []
 }>()
 
-const topItems = computed(() => [
-  { id: 'collections' as PanelId, label: t('sidebar.collections') },
-  { id: 'history' as PanelId, label: t('sidebar.history') },
-  { id: 'environments' as PanelId, label: t('env.title') },
-  { id: 'cookies' as PanelId, label: t('app.cookies') }
+const topItems = computed<PanelItem[]>(() => [
+  { id: 'collections', label: t('sidebar.collections') },
+  { id: 'history', label: t('sidebar.history') },
+  { id: 'environments', label: t('env.title') },
+  { id: 'cookies', label: t('app.cookies') }
 ])
+
+function isActive(panelId: PanelId): boolean {
+  return props.activePanel === panelId && !props.collapsed
+}
 
 function onItemClick(panelId: PanelId) {
   emit('select-panel', panelId)
 }
+
+function emitOpenSettings() {
+  emit('open-settings')
+}
+
+function emitOpenShortcuts() {
+  emit('open-shortcuts')
+}
+
+function getEnvBadgeText(name: string): string {
+  return name.charAt(0)
+}
+
+function getIconComponent(panelId: PanelId) {
+  const iconProps = { width: '18', height: '18', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }
+  
+  const icons: Record<PanelId, any> = {
+    collections: markRaw(() => h('svg', iconProps, h('path', { d: 'M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z' }))),
+    history: markRaw(() => h('svg', iconProps, [
+      h('circle', { cx: '12', cy: '12', r: '10' }),
+      h('polyline', { points: '12 6 12 12 16 14' })
+    ])),
+    environments: markRaw(() => h('svg', { ...iconProps, 'data-tour-id': 'env-selector' }, [
+      h('circle', { cx: '12', cy: '12', r: '10' }),
+      h('line', { x1: '2', y1: '12', x2: '22', y2: '12' }),
+      h('path', { d: 'M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z' })
+    ])),
+    cookies: markRaw(() => h('svg', iconProps, [
+      h('path', { d: 'M12 3a9 9 0 1 0 9 9c0-.4 0-.8-.1-1.2A3.8 3.8 0 0 1 17 7a4 4 0 0 1-3.9-3.4C12.7 3.2 12.3 3 12 3z' }),
+      h('circle', { cx: '8.5', cy: '11', r: '1' }),
+      h('circle', { cx: '12', cy: '14', r: '1' }),
+      h('circle', { cx: '15.5', cy: '10', r: '1' })
+    ]))
+  }
+  
+  return icons[panelId]
+}
+
+const ShortcutsIcon = markRaw(() => {
+  const props = { width: '18', height: '18', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }
+  return h('svg', props, [
+    h('circle', { cx: '12', cy: '12', r: '10' }),
+    h('path', { d: 'M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3' }),
+    h('line', { x1: '12', y1: '17', x2: '12.01', y2: '17' })
+  ])
+})
+
+const SettingsIcon = markRaw(() => {
+  const props = { width: '18', height: '18', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }
+  return h('svg', props, [
+    h('path', { d: 'M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z' }),
+    h('circle', { cx: '12', cy: '12', r: '3' })
+  ])
+})
 </script>
 
 <style scoped>

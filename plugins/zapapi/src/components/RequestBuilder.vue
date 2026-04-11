@@ -6,7 +6,7 @@
       <UiVariableInput ref="requestUrlInputRef" data-tour-id="request-url" data-shortcut-id="request-url-input"
         v-model="request.url" :placeholder="t('request.urlPlaceholder')" class="request-bar__url"
         @mouseup="handleUrlSelection"
-        @keydown="(e: KeyboardEvent) => e.key === 'Enter' && (!isSocket ? $emit('send') : (request.socket.status === 'connected' ? $emit('disconnect') : $emit('connect')))" />
+        @keydown="(e: KeyboardEvent) => { if (e.key !== 'Enter') closeUrlMenu(); else (!isSocket ? $emit('send') : (request.socket.status === 'connected' ? $emit('disconnect') : $emit('connect'))) }" />
       <template v-if="!isSocket">
         <UiButton data-tour-id="request-send" variant="primary" size="sm" class="request-bar__send"
           :disabled="sending || !request.url" :icon-only="!sidebarCollapsed" @click="$emit('send')">
@@ -547,6 +547,10 @@ function handleUrlSelection(e: MouseEvent) {
 function closeUrlMenu() {
   showUrlMenu.value = false
 }
+
+watch(() => props.request.url, () => {
+  showUrlMenu.value = false
+})
 
 function updateUrl(newUrl: string) {
   props.request.url = newUrl

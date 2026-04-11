@@ -247,11 +247,19 @@ function updateDropdownPosition() {
   const el = triggerRef.value
   if (el) {
     const rect = el.getBoundingClientRect()
+    const viewportHeight = window.innerHeight
+    const gap = 4
+    const maxDropdownHeight = 180
+
+    const spaceBelow = viewportHeight - rect.bottom - gap
+    const actualMaxHeight = Math.min(spaceBelow, maxDropdownHeight)
+
     dropdownStyle.value = {
       position: 'fixed',
-      top: `${rect.bottom + 4}px`,
+      top: `${rect.bottom + gap}px`,
       left: `${rect.left}px`,
       width: `${Math.max(rect.width, 160)}px`,
+      maxHeight: `${Math.max(actualMaxHeight, 100)}px`,
       zIndex: '9999'
     }
   }

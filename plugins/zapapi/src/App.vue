@@ -8,8 +8,8 @@
         <span>ZapApi</span>
       </div>
       <div class="zapapi-actions">
-        <UiButton data-tour-id="code-generator" variant="secondary" size="sm" :disabled="!activeTab || !activeTab.request.url"
-          @click="showCodeGenerator = true">
+        <UiButton data-tour-id="code-generator" variant="secondary" size="sm"
+          :disabled="!activeTab || !activeTab.request.url" @click="showCodeGenerator = true">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="16 18 22 12 16 6" />
             <polyline points="8 6 2 12 8 18" />
@@ -43,7 +43,7 @@
           @new-collection="onNewCollection" />
         <HistoryPanel v-if="activePanel === 'history'" @load-history="onLoadHistory" />
         <EnvironmentPanel v-if="activePanel === 'environments'" ref="envPanelRef" />
-        <CookiePanel v-if="activePanel === 'cookies'" ref="cookiePanelRef" />
+        <CookiePanel v-show="activePanel === 'cookies'" ref="cookiePanelRef" />
       </SidePanel>
       <div class="zapapi-main">
         <RequestTabs data-tour-id="tabs-root" :tabs="tabItems" :active-tab-id="activeTabId" @select="switchTab"
@@ -799,6 +799,7 @@ async function onSend() {
   } finally {
     activeTab.value.controller = null
     activeTab.value.sending = false
+    cookiePanelRef.value?.refreshCookies()
   }
 }
 

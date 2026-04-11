@@ -55,6 +55,8 @@ interface HttpRequestPayload {
     persistSessionCookies: boolean
     maxCookies?: number
   }
+  onChunk?: (chunk: string) => void
+  onFinished?: () => void
 }
 
 interface HttpResponsePayload {

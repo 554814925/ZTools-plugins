@@ -338,7 +338,17 @@ export default {
     empty: 'No cookies in jar',
     session: 'Session',
     copy: 'Copy',
-    copied: 'Copied!'
+    copied: 'Copied!',
+    add: 'Add Cookie',
+    addTitle: 'Add Cookie',
+    name: 'Name',
+    namePlaceholder: 'cookie_name',
+    value: 'Value',
+    valuePlaceholder: 'cookie_value',
+    domain: 'Domain',
+    domainPlaceholder: 'example.com',
+    path: 'Path',
+    sameSite: 'SameSite'
   },
 
   shortcuts: {

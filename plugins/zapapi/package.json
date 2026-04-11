@@ -1,11 +1,12 @@
 {
   "name": "zapapi",
   "version": "1.0.0",
-  "description": "A ZTools plugin",
+  "description": "API 测试工具，支持 HTTP/WebSocket 请求构建、响应查看、集合管理、历史记录、代码生成、环境变量和多种认证方式",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc && vite build"
+    "build": "vue-tsc && vite build && node scripts/post-build.js",
+    "preview": "node preview-server.js"
   },
   "dependencies": {
     "driver.js": "^1.4.0",

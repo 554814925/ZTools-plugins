@@ -14,6 +14,20 @@
 - 首次引导（Onboarding）
 - 中英繁三语支持
 
+## 截图预览
+
+### 主界面
+
+![主界面](images/main-interface.png)
+
+### 环境变量管理
+
+![环境变量](images/env-variables.png)
+
+### 图片预览
+
+![图片预览](images/image-preview.png)
+
 ## 技术栈
 
 - Vue 3 + TypeScript + Vite

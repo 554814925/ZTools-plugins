@@ -9,25 +9,39 @@
     :tabindex="disabled ? -1 : 0"
     role="button"
     :aria-disabled="disabled ? 'true' : 'false'"
-    @click="!disabled && $emit('click', $event)"
-    @keydown.enter="!disabled && $emit('click', $event)"
-    @keydown.space.prevent="!disabled && $emit('click', $event)"
+    @click="handleClick"
+    @keydown.enter="handleClick"
+    @keydown.space.prevent="handleClick"
   >
     <slot />
   </div>
 </template>
 
 <script setup lang="ts">
-defineProps<{
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'success' | 'warning'
-  size?: 'xs' | 'sm' | 'md'
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success' | 'warning'
+type ButtonSize = 'xs' | 'sm' | 'md'
+
+const props = withDefaults(defineProps<{
+  variant?: ButtonVariant
+  size?: ButtonSize
   disabled?: boolean
   iconOnly?: boolean
-}>()
+}>(), {
+  variant: 'secondary',
+  size: 'md',
+  disabled: false,
+  iconOnly: false
+})
 
-defineEmits<{
+const emit = defineEmits<{
   click: [event: MouseEvent | KeyboardEvent]
 }>()
+
+function handleClick(event: MouseEvent | KeyboardEvent) {
+  if (!props.disabled) {
+    emit('click', event)
+  }
+}
 </script>
 
 <style scoped>

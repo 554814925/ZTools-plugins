@@ -91,25 +91,47 @@ function parseContentDispositionFileName(contentDisposition: string): string | n
 
 function isLikelyBinaryContent(contentType: string): boolean {
   const lowered = contentType.toLowerCase()
-  if (!lowered) return false
-  if (lowered.startsWith('text/')) return false
-  if (lowered.includes('json') || lowered.includes('xml') || lowered.includes('javascript')) return false
+  if (!lowered) {
+    return false
+  }
+  if (lowered.startsWith('text/')) {
+    return false
+  }
+  if (lowered.includes('json') || lowered.includes('xml') || lowered.includes('javascript')) {
+    return false
+  }
   return true
 }
 
 function resolveBodyKind(req: RequestState): 'none' | 'text' | 'structured' | 'binary' | 'other' {
-  if (req.body.kind) return req.body.kind
-  if (req.body.type === 'none') return 'none'
-  if (req.body.type === 'urlencoded' || req.body.type === 'formdata') return 'structured'
-  if (req.body.type === 'json') return 'text'
+  if (req.body.kind) {
+    return req.body.kind
+  }
+  if (req.body.type === 'none') {
+    return 'none'
+  }
+  if (req.body.type === 'urlencoded' || req.body.type === 'formdata') {
+    return 'structured'
+  }
+  if (req.body.type === 'json') {
+    return 'text'
+  }
   return 'other'
 }
 
 function resolveBodyContentType(req: RequestState): string {
-  if (req.body.contentType) return req.body.contentType
-  if (req.body.type === 'json') return 'application/json'
-  if (req.body.type === 'urlencoded') return 'application/x-www-form-urlencoded'
-  if (req.body.type === 'formdata') return 'multipart/form-data'
+  if (req.body.contentType) {
+    return req.body.contentType
+  }
+  if (req.body.type === 'json') {
+    return 'application/json'
+  }
+  if (req.body.type === 'urlencoded') {
+    return 'application/x-www-form-urlencoded'
+  }
+  if (req.body.type === 'formdata') {
+    return 'multipart/form-data'
+  }
   return ''
 }
 
@@ -240,11 +262,15 @@ async function encodeBody(req: RequestState, variables: Record<string, string>):
   const bodyKind = resolveBodyKind(req)
   const bodyContentType = resolveBodyContentType(req)
 
-  if (bodyKind === 'none') return {}
+  if (bodyKind === 'none') {
+    return {}
+  }
 
   if (bodyKind === 'text' || bodyKind === 'other') {
     const text = req.body.raw ? resolveVariables(req.body.raw, variables) : ''
-    if (!text) return {}
+    if (!text) {
+      return {}
+    }
     return { bodyBase64: bytesToBase64(new TextEncoder().encode(text)) }
   }
 
@@ -339,12 +365,12 @@ async function executePreloadRequest(
       }
 
       let fetchUrl = url
+      const isDev = import.meta.env.DEV
       const isLocalhost = typeof window !== 'undefined' &&
         (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
       if (isLocalhost) {
         fetchUrl = '/__cors_proxy'
-        // cast headers generic to Record to safely apply our custom header
         const proxyHeaders = init.headers as Record<string, string>
         proxyHeaders['x-target-url'] = url
       }
@@ -372,15 +398,24 @@ async function executePreloadRequest(
     }
   }
 
-  return window.services.sendHttpRequest({
-    method,
-    url,
-    headers: Object.entries(headers).map(([name, value]) => ({ name, value })),
-    bodyBase64,
-    bodyMode: 'base64',
-    timeoutMs: REQUEST_TIMEOUT_MS,
-    maxRedirects: MAX_REDIRECTS,
-    cookieJar
+  return new Promise((resolve, reject) => {
+    let accumulatedBase64 = ''
+    window.services.sendHttpRequest({
+      method,
+      url,
+      headers: Object.entries(headers).map(([name, value]) => ({ name, value })),
+      bodyBase64,
+      bodyMode: 'base64',
+      timeoutMs: REQUEST_TIMEOUT_MS,
+      maxRedirects: MAX_REDIRECTS,
+      cookieJar,
+      onChunk: (chunk: string) => {
+        accumulatedBase64 += chunk
+      }
+    }).then((res: any) => {
+      res.bodyBase64 = accumulatedBase64 + (res.bodyBase64 || '')
+      resolve(res)
+    }).catch(reject)
   })
 }
 

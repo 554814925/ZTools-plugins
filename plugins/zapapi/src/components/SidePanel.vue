@@ -44,7 +44,6 @@ const panelTitle = computed(() => {
   background: var(--bg-surface);
   border-right: 1px solid var(--border-color);
   overflow: hidden;
-  transition: width var(--transition-base), min-width var(--transition-base);
 }
 
 .side-panel--collapsed {

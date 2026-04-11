@@ -39,8 +39,12 @@ function parseJsonObject(value: string, errorMessage: string): Record<string, un
 }
 
 function toSubtleHash(algorithm: JwtHmacAlgorithm): 'SHA-256' | 'SHA-384' | 'SHA-512' {
-  if (algorithm === 'HS384') return 'SHA-384'
-  if (algorithm === 'HS512') return 'SHA-512'
+  if (algorithm === 'HS384') {
+    return 'SHA-384'
+  }
+  if (algorithm === 'HS512') {
+    return 'SHA-512'
+  }
   return 'SHA-256'
 }
 
