@@ -23,6 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 
+design-system/
 .agent/
 .trae/
 .github/
