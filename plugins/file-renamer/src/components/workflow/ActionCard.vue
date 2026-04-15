@@ -8,15 +8,15 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ActionInstance } from '@/core/types'
 import { registry } from '@/core/registry'
-import { 
-  FRButton, 
+import {
+  FRButton,
   FRTooltip,
-  FRInput, 
-  FRSelect, 
-  FRSelectTrigger, 
-  FRSelectValue, 
-  FRSelectContent, 
-  FRSelectItem 
+  FRInput,
+  FRSelect,
+  FRSelectTrigger,
+  FRSelectValue,
+  FRSelectContent,
+  FRSelectItem
 } from '@/components/ui'
 import { X, ArrowDown } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
@@ -92,23 +92,17 @@ function appendTemplateToken(fieldKey: unknown, token: string) {
 <template>
   <div class="flex flex-col items-center w-full group">
     <!-- 卡片主体 -->
-    <div 
-      :class="cn(
-        'w-full bg-card border rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all relative z-10',
-        isCollapsed ? 'p-0 h-10 flex items-center justify-center' : 'p-3 border-muted-foreground/10'
-      )"
-    >
+    <div :class="cn(
+      'w-full bg-card border rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all relative z-10',
+      isCollapsed ? 'p-0 h-10 flex items-center justify-center' : 'p-3 border-muted-foreground/10'
+    )">
       <div v-if="isCollapsed" class="relative w-full h-full">
-        <FRTooltip
-          :content="collapsedTooltipContent"
-          :disabled="!collapsedTooltipContent"
-          side="right"
-          trigger-class="w-full h-full"
-          content-class="max-w-[260px]"
-        >
+        <FRTooltip :content="collapsedTooltipContent" :disabled="!collapsedTooltipContent" side="right"
+          trigger-class="w-full h-full" content-class="max-w-[260px]">
           <div class="w-full h-full flex items-center justify-center">
-            <div class="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-[10px] font-black border border-primary/20">
-                {{ index + 1 }}
+            <div
+              class="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-[10px] font-black border border-primary/20">
+              {{ index + 1 }}
             </div>
           </div>
         </FRTooltip>
@@ -117,20 +111,19 @@ function appendTemplateToken(fieldKey: unknown, token: string) {
       <template v-else>
         <div class="flex justify-between items-center mb-3">
           <div class="flex items-center gap-2">
-            <div class="w-5 h-5 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold border border-primary/20">
+            <div
+              class="w-5 h-5 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold border border-primary/20">
               {{ index + 1 }}
             </div>
             <FRTooltip :content="getPluginName(plugin)" :disabled="!plugin">
-              <h3 class="font-bold text-[11px] uppercase tracking-wider text-foreground truncate max-w-[160px]">{{ getPluginName(plugin) }}</h3>
+              <h3 class="font-bold text-[11px] uppercase tracking-wider text-foreground truncate max-w-[160px]">{{
+                getPluginName(plugin) }}</h3>
             </FRTooltip>
           </div>
           <FRTooltip :content="t('workflow.remove_rule')">
-            <FRButton 
-              variant="ghost" 
-              size="icon" 
-              class="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md opacity-0 group-hover:opacity-100 transition-all" 
-              @click="$emit('remove', index)"
-            >
+            <FRButton variant="ghost" size="icon"
+              class="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md opacity-0 group-hover:opacity-100 transition-all"
+              @click="$emit('remove', index)">
               <X class="w-3.5 h-3.5" />
             </FRButton>
           </FRTooltip>
@@ -141,30 +134,20 @@ function appendTemplateToken(fieldKey: unknown, token: string) {
             <label class="text-[10px] font-bold text-muted-foreground uppercase mb-1 block px-1 tracking-wider">
               {{ getSchemaLabel(key, schema) }}
             </label>
-            
-            <FRInput 
-              v-if="schema.type === 'string' || schema.type === 'number'" 
-              v-model="action.config[key]" 
+
+            <FRInput v-if="schema.type === 'string' || schema.type === 'number'" v-model="action.config[key]"
               :type="schema.type"
-              class="h-8 text-xs bg-muted/20 focus:bg-background border-muted-foreground/10 transition-colors"
-            />
+              class="h-8 text-xs bg-muted/20 focus:bg-background border-muted-foreground/10 transition-colors" />
 
             <div v-if="schema.type === 'string' && isTemplateField(key)" class="mt-1.5 flex flex-wrap gap-1.5 px-1">
-              <button
-                v-for="token in templateTokens"
-                :key="token"
-                type="button"
+              <button v-for="token in templateTokens" :key="token" type="button"
                 class="h-6 rounded-full border border-primary/25 bg-primary/8 px-2 text-[10px] font-semibold tracking-tight text-primary hover:bg-primary/15 hover:border-primary/35 active:scale-95 transition-all"
-                @click="appendTemplateToken(key, token)"
-              >
+                @click="appendTemplateToken(key, token)">
                 {{ token }}
               </button>
             </div>
-            
-            <FRSelect 
-              v-else-if="schema.type === 'select'" 
-              v-model="action.config[key]"
-            >
+
+            <FRSelect v-else-if="schema.type === 'select'" v-model="action.config[key]">
               <FRSelectTrigger class="h-8 text-xs bg-muted/20 border-muted-foreground/10">
                 <FRSelectValue />
               </FRSelectTrigger>
@@ -174,13 +157,16 @@ function appendTemplateToken(fieldKey: unknown, token: string) {
                 </FRSelectItem>
               </FRSelectContent>
             </FRSelect>
-            
-            <div v-else-if="schema.type === 'boolean'" class="flex items-center gap-2 px-1 ml-0.5 group/cb">
-              <input type="checkbox" v-model="action.config[key]" class="w-3.5 h-3.5 rounded border-input accent-primary transition-all cursor-pointer" />
-              <span class="text-xs font-semibold text-foreground/70 group-hover/cb:text-foreground transition-colors">{{ getSchemaLabel(key, schema) }}</span>
-            </div>
 
-            <p v-if="getSchemaDescription(key, schema) && !isTemplateField(key)" class="mt-1 px-1 text-[10px] text-muted-foreground/85 leading-relaxed">
+            <div v-else-if="schema.type === 'boolean'" class="flex items-center gap-2 px-1 ml-0.5 group/cb">
+              <input type="checkbox" v-model="action.config[key]"
+                class="w-3.5 h-3.5 rounded border-input accent-primary transition-all cursor-pointer" />
+              <span class="text-xs font-semibold text-foreground/70 group-hover/cb:text-foreground transition-colors">{{
+                getSchemaLabel(key, schema) }}</span>
+            </div>
+            
+            <p v-if="getSchemaDescription(key, schema) && !isTemplateField(key)"
+              class="mt-1 px-1 text-[10px] text-muted-foreground/85 leading-relaxed">
               {{ getSchemaDescription(key, schema) }}
             </p>
           </div>
@@ -189,14 +175,16 @@ function appendTemplateToken(fieldKey: unknown, token: string) {
     </div>
 
     <!-- 底部连接线与箭头 -->
-    <div v-if="showConnector" :class="cn('flex flex-col items-center relative w-px overflow-visible', isCollapsed ? 'py-1 h-4' : 'py-2 h-8')">
-       <div :class="cn(
-         'absolute top-0 bottom-0 w-0.5',
-         lineStyle === 'dashed' ? 'border-l-2 border-dashed border-primary/20' : 'bg-primary/20'
-       )"></div>
-       <div v-if="!isCollapsed" class="absolute -bottom-1 bg-background z-20 p-0.5 rounded-full border border-primary/20 shadow-sm animate-bounce-slow">
-         <ArrowDown class="w-2.5 h-2.5 text-primary fill-primary" />
-       </div>
+    <div v-if="showConnector"
+      :class="cn('flex flex-col items-center relative w-px overflow-visible', isCollapsed ? 'py-1 h-4' : 'py-2 h-8')">
+      <div :class="cn(
+        'absolute top-0 bottom-0 w-0.5',
+        lineStyle === 'dashed' ? 'border-l-2 border-dashed border-primary/20' : 'bg-primary/20'
+      )"></div>
+      <div v-if="!isCollapsed"
+        class="absolute -bottom-1 bg-background z-20 p-0.5 rounded-full border border-primary/20 shadow-sm animate-bounce-slow">
+        <ArrowDown class="w-2.5 h-2.5 text-primary fill-primary" />
+      </div>
     </div>
     <div v-else :class="isCollapsed ? 'h-2' : 'h-4'"></div>
   </div>
@@ -204,9 +192,17 @@ function appendTemplateToken(fieldKey: unknown, token: string) {
 
 <style scoped>
 @keyframes bounce-slow {
-  0%, 100% { transform: translateY(-2px); }
-  50% { transform: translateY(1px); }
+
+  0%,
+  100% {
+    transform: translateY(-2px);
+  }
+
+  50% {
+    transform: translateY(1px);
+  }
 }
+
 .animate-bounce-slow {
   animation: bounce-slow 2s ease-in-out infinite;
 }

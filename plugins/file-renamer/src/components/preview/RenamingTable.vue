@@ -17,15 +17,15 @@ import {
   FRTableHeader,
   FRTableRow,
 } from '@/components/ui'
-import { 
+import {
   Circle,
   Check,
-  FileIcon, 
-  FileText, 
-  FileImage, 
-  FileVideo, 
-  FileAudio, 
-  FileCode2, 
+  FileIcon,
+  FileText,
+  FileImage,
+  FileVideo,
+  FileAudio,
+  FileCode2,
   FileArchive,
   CheckCircle2,
   AlertCircle,
@@ -233,21 +233,22 @@ function canRevert(file: FileItem) {
   <div class="file-preview-table flex-1 flex flex-col min-w-0 bg-background overflow-hidden relative">
     <!-- Empty State -->
     <div v-if="files.length === 0" class="flex-1 flex flex-col items-center justify-center opacity-20 select-none">
-       <div class="relative mb-6">
-         <FileIcon class="w-20 h-20 stroke-1" />
-         <div class="absolute -right-2 -bottom-2 p-2 bg-primary/20 rounded-full animate-pulse">
-           <Clock class="w-6 h-6 text-primary" />
-         </div>
-       </div>
-       <h3 class="text-lg font-black uppercase tracking-tighter italic text-foreground">{{ t('app.no_files') }}</h3>
-       <p class="text-[10px] font-medium mt-1 text-muted-foreground">{{ t('app.no_files_desc') }}</p>
-       <div class="mt-4 rounded-xl border border-primary/20 bg-primary/8 px-4 py-2 text-center">
-         <p class="text-[11px] font-bold tracking-tight text-primary">{{ t('app.drag_import_title') }}</p>
-         <p class="mt-0.5 text-[10px] text-muted-foreground">{{ t('app.drag_import_desc') }}</p>
-       </div>
+      <div class="relative mb-6">
+        <FileIcon class="w-20 h-20 stroke-1" />
+        <div class="absolute -right-2 -bottom-2 p-2 bg-primary/20 rounded-full animate-pulse">
+          <Clock class="w-6 h-6 text-primary" />
+        </div>
+      </div>
+      <h3 class="text-lg font-black uppercase tracking-tighter italic text-foreground">{{ t('app.no_files') }}</h3>
+      <p class="text-[10px] font-medium mt-1 text-muted-foreground">{{ t('app.no_files_desc') }}</p>
+      <div class="mt-4 rounded-xl border border-primary/20 bg-primary/8 px-4 py-2 text-center">
+        <p class="text-[11px] font-bold tracking-tight text-primary">{{ t('app.drag_import_title') }}</p>
+        <p class="mt-0.5 text-[10px] text-muted-foreground">{{ t('app.drag_import_desc') }}</p>
+      </div>
     </div>
 
-    <div v-else class="mx-4 mt-4 mb-4 flex flex-1 min-h-0 flex-col overflow-hidden rounded-2xl border border-border/75 bg-card shadow-xl shadow-primary/10">
+    <div v-else
+      class="mx-4 mt-4 mb-4 flex flex-1 min-h-0 flex-col overflow-hidden rounded-2xl border border-border/75 bg-card shadow-xl shadow-primary/10">
       <div class="flex items-center justify-between border-b border-border/75 px-3 py-2">
         <span class="text-[11px] font-medium text-muted-foreground">
           {{ selectedCount > 0 ? t('table.selected_count', { count: selectedCount }) : t('table.batch_tip') }}
@@ -259,96 +260,93 @@ function canRevert(file: FileItem) {
           <FRTableRow class="hover:bg-transparent border-none">
             <FRTableHead class="w-12 text-center h-10 px-2">
               <FRTooltip :content="t('table.select_all')">
-                <button
-                  type="button"
+                <button type="button"
                   class="mx-auto inline-flex h-5 w-5 items-center justify-center rounded border border-input bg-background text-muted-foreground transition-colors duration-200 hover:border-primary/45 hover:text-primary cursor-pointer"
-                  @click="toggleSelectAll"
-                >
+                  @click="toggleSelectAll">
                   <Check v-if="allSelected" class="h-3.5 w-3.5" />
                   <Circle v-else class="h-3.5 w-3.5" />
                 </button>
               </FRTooltip>
             </FRTableHead>
-            <FRTableHead class="h-10 text-[10px] font-semibold tracking-wide text-muted-foreground">{{ t('table.original_name') }}</FRTableHead>
-            <FRTableHead class="h-10 text-[10px] font-semibold tracking-wide text-muted-foreground">{{ t('table.new_name') }}</FRTableHead>
-            <FRTableHead class="hidden 2xl:table-cell 2xl:w-20 h-10 text-[10px] font-semibold tracking-wide text-muted-foreground">{{ t('table.type') }}</FRTableHead>
-            <FRTableHead class="hidden xl:table-cell xl:w-20 h-10 text-[10px] font-semibold tracking-wide text-muted-foreground">{{ t('table.size') }}</FRTableHead>
-            <FRTableHead class="hidden 2xl:table-cell 2xl:w-24 h-10 text-[10px] font-semibold tracking-wide text-muted-foreground">{{ t('table.modified') }}</FRTableHead>
-            <FRTableHead class="w-20 lg:w-24 h-10 text-[10px] font-semibold tracking-wide text-muted-foreground">{{ t('table.status') }}</FRTableHead>
-            <FRTableHead class="w-16 lg:w-20 h-10 text-[10px] font-semibold tracking-wide text-muted-foreground">{{ t('table.actions') }}</FRTableHead>
+            <FRTableHead class="h-10 text-[10px] font-semibold tracking-wide text-muted-foreground">{{
+              t('table.original_name') }}</FRTableHead>
+            <FRTableHead class="h-10 text-[10px] font-semibold tracking-wide text-muted-foreground">{{
+              t('table.new_name') }}</FRTableHead>
+            <FRTableHead
+              class="hidden 2xl:table-cell 2xl:w-20 h-10 text-[10px] font-semibold tracking-wide text-muted-foreground">
+              {{ t('table.type') }}</FRTableHead>
+            <FRTableHead
+              class="hidden xl:table-cell xl:w-20 h-10 text-[10px] font-semibold tracking-wide text-muted-foreground">{{
+                t('table.size') }}</FRTableHead>
+            <FRTableHead
+              class="hidden 2xl:table-cell 2xl:w-24 h-10 text-[10px] font-semibold tracking-wide text-muted-foreground">
+              {{ t('table.modified') }}</FRTableHead>
+            <FRTableHead class="w-20 lg:w-24 h-10 text-[10px] font-semibold tracking-wide text-muted-foreground">{{
+              t('table.status') }}</FRTableHead>
+            <FRTableHead class="w-20 h-10 text-[10px] font-semibold tracking-wide text-muted-foreground">{{
+              t('table.actions') }}</FRTableHead>
           </FRTableRow>
         </FRTableHeader>
         <FRTableBody class="[&_tr:last-child]:border-b-0">
-          <FRTableRow
-            v-for="file in files"
-            :key="file.id"
-            :class="cn(
-              'group border-b border-border/70 transition-colors duration-200 hover:bg-muted/55',
-              getLinkedRowTone(file)
-            )"
-          >
+          <FRTableRow v-for="file in files" :key="file.id" :class="cn(
+            'group border-b border-border/70 transition-colors duration-200 hover:bg-muted/55',
+            getLinkedRowTone(file)
+          )">
+          <!-- 选择列 -->
             <FRTableCell class="py-2 px-2 text-center">
               <FRTooltip :content="t('table.select_item')">
-                <button
-                  type="button"
+                <button type="button"
                   class="mx-auto inline-flex h-5 w-5 items-center justify-center rounded border transition-all duration-200 cursor-pointer"
                   :class="isSelected(file.id)
                     ? cn('shadow-sm', getStatusTone(file))
                     : 'border-input bg-background text-muted-foreground hover:border-primary/45 hover:text-primary'"
-                  @click="toggleSelect(file.id)"
-                >
+                  @click="toggleSelect(file.id)">
                   <Check v-if="isSelected(file.id)" class="h-3.5 w-3.5" />
                   <Circle v-else class="h-3.5 w-3.5" />
                 </button>
               </FRTooltip>
             </FRTableCell>
-
+            <!-- 原始名称列 -->
             <FRTableCell class="py-2.5 px-3 overflow-hidden">
               <div class="flex min-w-0 items-center gap-3">
-                <div :class="cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-md border', getFileIconTone(file.extension))">
+                <div
+                  :class="cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-md border', getFileIconTone(file.extension))">
                   <component :is="getFileIcon(file.extension)" class="h-4 w-4" />
                 </div>
-                <FROverflowTooltipText
-                  :text="file.originalName"
-                  class="min-w-0"
-                  text-class="text-[13px] font-medium text-foreground"
-                />
+                <FROverflowTooltipText :text="file.originalName" class="min-w-0"
+                  text-class="text-[13px] font-medium text-foreground" />
               </div>
             </FRTableCell>
-
+            <!-- 新名称列 -->
             <FRTableCell class="py-2.5 px-3 overflow-hidden">
-              <FROverflowTooltipText
-                :text="file.newName"
-                class="min-w-0"
-                text-class="text-[13px] font-semibold text-primary"
-              />
+              <FROverflowTooltipText :text="file.newName" class="min-w-0"
+                text-class="text-[13px] font-semibold text-primary" />
             </FRTableCell>
-
+            <!-- 文件类型列 -->
             <FRTableCell class="hidden 2xl:table-cell py-2.5 px-2 whitespace-nowrap">
-              <span :class="cn('inline-flex rounded-full border px-1.5 py-0.5 text-[10px] font-semibold tracking-wide', getTypeBadgeTone(file.extension))">
+              <span
+                :class="cn('inline-flex rounded-full border px-1.5 py-0.5 text-[10px] font-semibold tracking-wide', getTypeBadgeTone(file.extension))">
                 {{ getFileTypeLabel(file.extension) }}
               </span>
             </FRTableCell>
-
+            <!-- 文件大小列 -->
             <FRTableCell class="hidden xl:table-cell py-2.5 px-2 whitespace-nowrap">
               <span class="text-[12px] text-muted-foreground">{{ formatSize(file.size) }}</span>
             </FRTableCell>
-
+            <!-- 最后修改时间列 -->
             <FRTableCell class="hidden 2xl:table-cell py-2.5 px-2 whitespace-nowrap">
               <FRTooltip :content="formatDateFull(file.lastModified)">
                 <span class="text-[12px] text-muted-foreground">{{ formatDate(file.lastModified) }}</span>
               </FRTooltip>
             </FRTableCell>
-
+            <!-- 状态列 -->
             <FRTableCell class="py-2.5 px-2 whitespace-nowrap">
               <div class="flex items-center">
                 <FRTooltip :content="file.errorMessage" :disabled="!file.errorMessage">
-                  <span
-                    :class="cn(
-                      'inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold',
-                      getStatusTone(file)
-                    )"
-                  >
+                  <span :class="cn(
+                    'inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold',
+                    getStatusTone(file)
+                  )">
                     <CheckCircle2 v-if="file.status === 'success'" class="h-3.5 w-3.5" />
                     <AlertCircle v-else-if="file.status === 'error'" class="h-3.5 w-3.5" />
                     <Clock v-else-if="file.newName !== file.originalName" class="h-3.5 w-3.5" />
@@ -357,25 +355,20 @@ function canRevert(file: FileItem) {
                 </FRTooltip>
               </div>
             </FRTableCell>
-
+            <!-- 操作列 -->
             <FRTableCell class="py-2.5 px-1.5 lg:px-2">
               <div class="flex items-center gap-1">
                 <FRTooltip :content="t('table.revert')">
-                  <button
-                    type="button"
+                  <button type="button"
                     class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-warning/30 bg-warning-soft text-warning-foreground transition-colors duration-200 hover:border-warning/45 hover:bg-warning-soft/80 cursor-pointer"
-                    :disabled="!canRevert(file)"
-                    @click="revertFileHandler(file.id)"
-                  >
+                    :disabled="!canRevert(file)" @click="revertFileHandler(file.id)">
                     <Undo2 class="h-3.5 w-3.5" />
                   </button>
                 </FRTooltip>
                 <FRTooltip :content="t('table.delete')">
-                  <button
-                    type="button"
+                  <button type="button"
                     class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition-colors duration-200 hover:border-destructive/35 hover:bg-destructive/10 hover:text-destructive cursor-pointer"
-                    @click="removeFile(file.id)"
-                  >
+                    @click="removeFile(file.id)">
                     <Trash2 class="h-3.5 w-3.5" />
                   </button>
                 </FRTooltip>
