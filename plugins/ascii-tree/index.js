@@ -102,11 +102,16 @@
   };
 
   const treeToLevelText = (tree) =>
-    tree
-      .replaceAll("├──", "=")
-      .replaceAll("└──", "=")
-      .replaceAll("│   ", "=")
-      .replaceAll("    ", "=");
+    tree.split("\n").map(line => {
+      let level = 0;
+      let content = line;
+      const prefixes = ["├── ", "└── ", "│   ", "    "];
+      while (prefixes.some(p => content.startsWith(p))) {
+        level++;
+        content = content.substring(4);
+      }
+      return "=".repeat(level) + content;
+    }).join("\n");
 
   const saveInput = () => {
     getStorage().setItem(STORAGE_KEY, elements.input.value);
