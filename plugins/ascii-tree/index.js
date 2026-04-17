@@ -132,29 +132,6 @@
     }
   };
 
-  const applyLaunchPayload = ({ code, type, payload }) => {
-    if (code !== "ascii-tree-convert") {
-      return;
-    }
-
-    if (type !== "regex" && type !== "over") {
-      return;
-    }
-
-    if (typeof payload !== "string") {
-      return;
-    }
-
-    const normalized = payload.trim();
-
-    if (!normalized) {
-      return;
-    }
-
-    elements.input.value = normalized.replace(/^ascii[- ]tree\s+/i, "");
-    renderTree();
-  };
-
   const copyOutput = async () => {
     const content = elements.output.value.trim();
 
@@ -223,9 +200,6 @@
     elements.fillSampleButton.addEventListener("click", fillSample);
 
     window.addEventListener("beforeunload", saveInput);
-    window.addEventListener("ascii-tree:plugin-enter", (event) => {
-      applyLaunchPayload(event.detail || {});
-    });
     window.addEventListener("resize", setWindowHeight);
   };
 
@@ -234,12 +208,6 @@
     bindEvents();
     renderTree();
     setWindowHeight();
-
-    if (window.ztools?.onPluginEnter) {
-      window.ztools.onPluginEnter(({ code, type, payload }) => {
-        applyLaunchPayload({ code, type, payload });
-      });
-    }
   };
 
   init();
