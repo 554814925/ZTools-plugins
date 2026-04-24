@@ -27,9 +27,9 @@ async function getRawRegistry() {
   }
 }
 
-function saveRegistry(registry) {
+async function saveRegistry(registry) {
   MEM_REGISTRY = registry;
-  fs.writeFileSync(REGISTRY_FILE, JSON.stringify(registry, null, 2));
+  await fs.promises.writeFile(REGISTRY_FILE, JSON.stringify(registry, null, 2));
 }
 const AGENT_CONFIGS = [
   { id: 'antigravity', name: 'Antigravity', path: '.gemini/antigravity/skills' },
@@ -645,7 +645,7 @@ async function uninstallSkill(skillId) {
 
   try {
     let registry = JSON.parse(fs.readFileSync(REGISTRY_FILE, 'utf-8'));
-    saveRegistry(registry.filter(s => s.id !== skillId));
+    await saveRegistry(registry.filter(s => s.id !== skillId));
   } catch (e) { }
 
   return true;
@@ -1057,7 +1057,7 @@ async function distributeSkill(skillId, targetAgents) {
           installedAt: skill.installedAt,
           updatedAt: new Date().toISOString()
         });
-        saveRegistry(currentReg);
+        await saveRegistry(currentReg);
       }
     } catch (e) { }
   }
