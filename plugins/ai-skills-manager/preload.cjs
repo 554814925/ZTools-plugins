@@ -44,11 +44,11 @@ function saveRegistrySync(registry) {
 
 // 同步读取注册表（优先使用内存缓存）
 function readRegistrySync() {
-  if (MEM_REGISTRY) return MEM_REGISTRY;
+  if (MEM_REGISTRY) return [...MEM_REGISTRY];
   try {
     const data = fs.readFileSync(REGISTRY_FILE, 'utf-8');
     MEM_REGISTRY = JSON.parse(data);
-    return MEM_REGISTRY;
+    return [...MEM_REGISTRY];
   } catch (e) {
     return [];
   }
@@ -106,7 +106,12 @@ function getPathForAgent(agentId) {
   if (conf) {
     return path.join(home, ...conf.path.split('/'));
   }
-  return agentId;
+  // 自定义路径安全校验：必须在用户主目录下，且不能包含路径穿越
+  const resolved = path.resolve(agentId);
+  if (!resolved.startsWith(home) || agentId.includes('..')) {
+    throw new Error(`不安全的路径: ${agentId}`);
+  }
+  return resolved;
 }
 
 // 确保目录和文件存在
@@ -340,7 +345,6 @@ async function getSkillsList() {
   actualSkills.push(...processedRegistry.filter(s => s !== null));
 
   // 2. 扫描所有 Agent 路径 (并发扫描)
-  const agentsToScan = AGENT_CONFIGS.map(a => a.id);
   const normalize = p => p.toLowerCase().replace(/\\/g, '/');
 
   const scanPromises = AGENT_CONFIGS.map(async (agentConf) => {
@@ -782,7 +786,6 @@ async function updateSkill(skillId, onProgress) {
 }
 
 // ========== 批量更新技能 ==========
-// ========== 批量更新技能 (逐个独立拉取) ==========
 async function batchUpdateSkills(skillIds, onProgress) {
   const all = await getSkillsList();
   const results = { success: [], failed: [] };
