@@ -451,7 +451,8 @@ function gitCloneWithFallback(gitUrl, cloneDir, onProgress) {
             tryClone();
           } else {
             const detail = errData.trim().replace(/[\r\n]+/g, ' ').substring(0, 300);
-            reject(new Error(`所有线路均失败: ${detail || '网络不可达'}`));
+            const hint = "\n提示：所有线路均不可达。如果您在中国大陆，请尝试在命令行配置 Git 代理：\ngit config --global http.proxy http://127.0.0.1:您的代理端口";
+            reject(new Error(`克隆失败。${hint}\n详情：${detail || '网络连接超时'}`));
           }
         }
       });
