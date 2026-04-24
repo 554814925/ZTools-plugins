@@ -512,7 +512,7 @@ function previewSkills(repoUrl, onProgress) {
         for (const entry of entries) {
           if (entry.isDirectory()) {
             // 跳过无效和巨大的隐藏文件夹，但必须允许 .claude 等 Agent 特定文件夹
-            if (entry.name === '.git' || entry.name === 'node_modules' || entry.name === 'assets') continue;
+            if (entry.name === '.git' || entry.name === 'node_modules') continue;
             const full = path.join(dir, entry.name);
             const currentRel = relPath ? `${relPath}/${entry.name}` : entry.name;
             if (fs.existsSync(path.join(full, 'SKILL.md')) || fs.existsSync(path.join(full, 'skill.md'))) {
@@ -796,14 +796,25 @@ function openLocalPath(localPath) {
 
 function openUrl(url) {
   if (!url) return;
+  
+  // 优先尝试使用 electron 的 shell API (最直接、最安全的系统原生调用)
+  try {
+    const { shell } = require('electron');
+    if (shell && shell.openExternal) {
+      shell.openExternal(url);
+      return;
+    }
+  } catch (e) {}
+
   const { spawn } = require('child_process');
   const platform = process.platform;
 
   try {
     if (platform === 'win32') {
-      // 安全过滤：防止 Windows 下的命令注入，仅允许合规的 http/https URL
+      // 安全过滤：仅允许合规的 http/https URL
       if (/^https?:\/\/[^\s"&|^<>]+$/.test(url)) {
-        spawn('cmd', ['/c', 'start', '""', url], { detached: true, stdio: 'ignore' }).unref();
+        // 使用 explorer 彻底避免 cmd /c 执行带来的命令注入和转义问题
+        spawn('explorer', [url], { detached: true, stdio: 'ignore' }).unref();
       }
     } else if (platform === 'darwin') {
       spawn('open', [url], { detached: true, stdio: 'ignore' }).unref();
