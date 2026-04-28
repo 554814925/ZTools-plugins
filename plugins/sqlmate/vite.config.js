@@ -1,5 +1,6 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+import fs from 'fs'
 import { copyFileSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { resolve } from 'path'
 
@@ -36,11 +37,14 @@ function stripDevConfig() {
       // 保留 package.json（声明 "type": "commonjs"，preload 层必须用 CJS）
       // 但清理其中的 dependencies 字段
       const preloadPkgPath = resolve(__dirname, 'dist/preload/package.json')
-      try {
+      if (fs.existsSync(preloadPkgPath)) {
         const pkg = JSON.parse(readFileSync(preloadPkgPath, 'utf-8'))
         delete pkg.dependencies
         writeFileSync(preloadPkgPath, JSON.stringify(pkg, null, 2), 'utf-8')
-      } catch {}
+      } else {
+        // preload/package.json 不存在时主动创建（声明 CJS 模式）
+        writeFileSync(preloadPkgPath, JSON.stringify({ type: 'commonjs' }, null, 2), 'utf-8')
+      }
     }
   }
 }
