@@ -969,7 +969,7 @@
               enabled: item.enabled,
               commands: item.commands.slice()
             }))
-            state.builtin.items = decorateBuiltinItems(builtinApi.saveItems(payload))
+            state.builtin.items = decorateBuiltinItems(await builtinApi.saveItems(payload))
             state.dirty.builtin = false
           }
 
@@ -980,7 +980,7 @@
               content: item.content,
               commands: item.commands.slice()
             }))
-            state.custom.items = decorateCustomItems(customApi.saveItems(payload))
+            state.custom.items = decorateCustomItems(await customApi.saveItems(payload))
             state.dirty.custom = false
           }
 
@@ -1440,15 +1440,20 @@
           return
         }
 
-        if (builtinApi) {
-          state.builtin.items = decorateBuiltinItems(builtinApi.getItems())
-        }
-
-        if (customApi) {
-          state.custom.items = decorateCustomItems(customApi.getItems())
-        }
-
-        renderActiveList()
+        Promise.all([
+          builtinApi ? builtinApi.getItems() : Promise.resolve(null),
+          customApi ? customApi.getItems() : Promise.resolve(null)
+        ]).then(([builtinItems, customItems]) => {
+          if (builtinItems) {
+            state.builtin.items = decorateBuiltinItems(builtinItems)
+          }
+          if (customItems) {
+            state.custom.items = decorateCustomItems(customItems)
+          }
+          renderActiveList()
+        }).catch(error => {
+          showNotification(`加载配置失败：${error && error.message ? error.message : '未知错误'}`)
+        })
       }
 
       init()
